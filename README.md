@@ -1,1 +1,1 @@
-SliceFinder updated front end practice
+New SliceFinder front-end
