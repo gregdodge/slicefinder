@@ -393,13 +393,16 @@
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
 
-    // Hamburger — stop Bootstrap intercepting, handle manually
-    document.getElementById('nav-toggle').addEventListener('click', function(e) {
-      e.stopPropagation();
-      var nav = document.getElementById('bs-navbar');
-      nav.classList.toggle('open');
-      this.setAttribute('aria-expanded', nav.classList.contains('open'));
-    }, true); // true = capture phase, fires before Bootstrap
+    // Hamburger — unbind Bootstrap's handler, use our own
+    $(document).ready(function() {
+      $('#nav-toggle').off('click.bs.collapse').off('click').on('click', function(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var nav = document.getElementById('bs-navbar');
+        nav.classList.toggle('open');
+        this.setAttribute('aria-expanded', nav.classList.contains('open'));
+      });
+    });
   </script>
 
   <!-- ── Firebase: load restaurants near a location ──────────────── -->
