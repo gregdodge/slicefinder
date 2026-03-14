@@ -27,7 +27,7 @@
 
     @media (max-width:767px) {
       #bs-navbar { display:none; width:100%; }
-      #bs-navbar.open { display:block; }
+      #bs-navbar.in { display:block; }
       #bs-navbar .nav > li > a { color:#fff !important; padding:10px 16px; }
       #bs-navbar .nav > li > a:hover { background:#333 !important; }
       #nav-toggle { display:block !important; }
@@ -143,13 +143,13 @@
   <nav class="navbar navbar-inverse">
     <div class="container-fluid" style="padding:0 10px;">
       <div class="navbar-header">
-        <button id="nav-toggle" type="button" class="navbar-toggle collapsed" aria-expanded="false">
+        <button id="nav-toggle" type="button" class="navbar-toggle collapsed" aria-expanded="false" data-toggle="collapse" data-target="#bs-navbar">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="index.html">SliceFinder</a>
       </div>
-      <div id="bs-navbar">
+      <div id="bs-navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <li class="active"><a href="index.html">Restaurants</a></li>
           <li><a href="frozen.html">Frozen Pizza</a></li>
@@ -393,16 +393,7 @@
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
 
-    // Hamburger — unbind Bootstrap's handler, use our own
-    $(document).ready(function() {
-      $('#nav-toggle').off('click.bs.collapse').off('click').on('click', function(e) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        var nav = document.getElementById('bs-navbar');
-        nav.classList.toggle('open');
-        this.setAttribute('aria-expanded', nav.classList.contains('open'));
-      });
-    });
+    // Hamburger handled by Bootstrap collapse via data-toggle/data-target
   </script>
 
   <!-- ── Firebase: load restaurants near a location ──────────────── -->
