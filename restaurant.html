@@ -242,6 +242,13 @@
       border-bottom: 1px solid #eee; padding-bottom: 4px;
     }
 
+    /* ── Inline review editing ── */
+    .review-edit-form { margin-top: 8px; padding: 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+    .review-edit-stars { display: flex; gap: 6px; margin-bottom: 8px; }
+    .review-edit-stars span { font-size: 24px; cursor: pointer; color: #ddd; transition: color 0.1s; }
+    .review-edit-stars span.on { color: #e67e22; }
+    .review-edit-btns { margin-top: 6px; display: flex; gap: 6px; }
+
     /* ── Loading/error states ── */
     #loading { text-align: center; padding: 60px 0; color: #888; font-size: 18px; }
     #error-msg { display: none; text-align: center; padding: 60px 0; color: #c0392b; }
@@ -331,8 +338,8 @@
       <div class="photo-grid" id="photo-grid">
         <!-- placeholder slots -->
         <div class="photo-slot">🍕</div>
-        <!-- <div class="photo-slot">🍕</div>
-        <div class="photo-slot">🍕</div>  -->
+        <div class="photo-slot">🍕</div>
+        <div class="photo-slot">🍕</div>
         <div class="photo-slot" style="font-size:13px; color:#c0392b;">+ Add photo<br><span style="font-size:10px;">(coming soon)</span></div>
       </div>
 
@@ -569,7 +576,7 @@
 
       // Sort client-side by createdAt descending
       const docs = [];
-      reviewSnaps.forEach(s => docs.push(s.data()));
+      reviewSnaps.forEach(s => { const d = s.data(); d._id = s.id; docs.push(d); });
       docs.sort((a, b) => {
         const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
         const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
@@ -612,8 +619,15 @@
           ? `<a class="reviewer" href="profile.html?user=${rv.uid}" style="color:#c0392b; text-decoration:none;">${rv.username || 'Anonymous'}</a>`
           : `<span class="reviewer">${rv.username || 'Anonymous'}</span>`;
 
+        const canEdit = currentUser && (isAdmin || currentUser.uid === rv.uid);
+        const editBtns = canEdit ? `
+          <div class="review-edit-btns">
+            <button class="btn btn-default btn-xs" onclick="editReview('${rv._id}', ${rv.rating||0}, ${JSON.stringify(rv.text||'')})">✏️ Edit</button>
+            <button class="btn btn-danger btn-xs" onclick="deleteReview('${rv._id}')">🗑</button>
+          </div>` : '';
         const div = document.createElement('div');
         div.className = 'review-card';
+        div.id = 'rv-' + rv._id;
         div.innerHTML = `
           <div class="review-header">
             ${avatarHtml}
@@ -626,6 +640,7 @@
             </div>
           </div>
           <div class="review-text">${rv.text || ''}</div>
+          ${editBtns}
         `;
         listEl.appendChild(div);
       });
@@ -635,6 +650,7 @@
 
     // ── Auth state: show/hide review form ────────────────────────────
     let currentUser = null;
+    let isAdmin = false;
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       const loginPrompt = document.getElementById('review-login-prompt');
@@ -771,6 +787,7 @@
       try {
         const userSnap = await getDoc(doc(db, 'users', user.uid));
         if (userSnap.exists() && userSnap.data().isAdmin === true) {
+          isAdmin = true;
           const bar = document.getElementById('admin-bar');
           if (bar) { bar.style.display = 'flex'; }
         }
@@ -871,6 +888,76 @@
         alert('Delete failed: ' + e.message);
       }
     }
+
+
+    // ── Edit / delete review ──────────────────────────────────────────
+    window.editReview = function(reviewId, currentRating, currentText) {
+      const card = document.getElementById('rv-' + reviewId);
+      if (!card) return;
+      const starsHtml = [1,2,3,4,5].map(v =>
+        `<span data-val="${v}" class="${v <= currentRating ? 'on' : ''}" onclick="setReviewEditStar(this,'${reviewId}')">${'★'}</span>`
+      ).join('');
+      const editForm = document.createElement('div');
+      editForm.className = 'review-edit-form';
+      editForm.innerHTML = `
+        <div class="review-edit-stars" id="res-stars-${reviewId}">${starsHtml}</div>
+        <input type="hidden" id="res-rating-${reviewId}" value="${currentRating}">
+        <textarea id="res-text-${reviewId}" class="form-control input-sm" rows="2" style="margin-bottom:8px;">${currentText}</textarea>
+        <div class="review-edit-btns">
+          <button class="btn btn-danger btn-xs" onclick="saveReview('${reviewId}')">Save</button>
+          <button class="btn btn-default btn-xs" onclick="loadReviews()">Cancel</button>
+          <span id="res-status-${reviewId}" style="font-size:12px; margin-left:8px;"></span>
+        </div>`;
+      // Replace card content below the header
+      const existingForm = card.querySelector('.review-edit-form');
+      if (existingForm) existingForm.remove();
+      card.appendChild(editForm);
+    };
+
+    window.setReviewEditStar = function(el, reviewId) {
+      const val = +el.dataset.val;
+      document.getElementById('res-rating-' + reviewId).value = val;
+      el.parentElement.querySelectorAll('span').forEach(s => {
+        s.classList.toggle('on', +s.dataset.val <= val);
+      });
+    };
+
+    window.saveReview = async function(reviewId) {
+      const statusEl = document.getElementById('res-status-' + reviewId);
+      const rating = +document.getElementById('res-rating-' + reviewId).value;
+      const text   = document.getElementById('res-text-' + reviewId).value.trim();
+      if (!rating) { statusEl.textContent = '❌ Pick a rating.'; return; }
+      statusEl.textContent = 'Saving…';
+      try {
+        await updateDoc(doc(db, 'reviews', reviewId), { rating, text });
+        // Recalculate avgRating
+        const allRevSnap = await getDocs(query(collection(db, 'reviews'), where('restaurantId', '==', restaurantId)));
+        let total = 0, count = 0;
+        allRevSnap.forEach(d => { if (d.data().rating) { total += d.data().rating; count++; } });
+        if (count > 0) {
+          await updateDoc(doc(db, 'restaurants', restaurantId), {
+            avgRating: Math.round((total / count) * 10) / 10,
+            reviewCount: count,
+          });
+        }
+        await loadReviews();
+      } catch(e) { statusEl.textContent = '❌ ' + e.message; }
+    };
+
+    window.deleteReview = async function(reviewId) {
+      if (!confirm('Delete this review?')) return;
+      try {
+        await deleteDoc(doc(db, 'reviews', reviewId));
+        const allRevSnap = await getDocs(query(collection(db, 'reviews'), where('restaurantId', '==', restaurantId)));
+        let total = 0, count = 0;
+        allRevSnap.forEach(d => { if (d.data().rating) { total += d.data().rating; count++; } });
+        await updateDoc(doc(db, 'restaurants', restaurantId), {
+          avgRating: count > 0 ? Math.round((total / count) * 10) / 10 : null,
+          reviewCount: count,
+        });
+        await loadReviews();
+      } catch(e) { alert('Delete failed: ' + e.message); }
+    };
 
   </script>
 
