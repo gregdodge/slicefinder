@@ -272,13 +272,13 @@
       </div>
       <div id="bs-navbar">
         <ul class="nav navbar-nav">
-          <li class="active"><a href="index">Restaurants</a></li>
-          <li><a href="frozen">Frozen Pizza</a></li>
-          <li><a href="news">Pizza News</a></li>
-          <li><a href="profile">My Profile</a></li>
+          <li class="active"><a href="index.html">Restaurants</a></li>
+          <li><a href="#">Frozen Pizza</a></li>
+          <li><a href="#">Pizza News</a></li>
+          <li><a href="#">My Profile</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
-          <li><a href="profile.html" id="nav-auth-btn">Login</a></li>
+          <li><a href="profile.html" id="nav-auth-btn" style="color:#c0392b !important;font-weight:bold;">Login</a></li>
         </ul>
       </div>
     </div>
@@ -338,11 +338,9 @@
       <div class="photo-grid" id="photo-grid">
         <!-- placeholder slots -->
         <div class="photo-slot">🍕</div>
-        <!--
         <div class="photo-slot">🍕</div>
         <div class="photo-slot">🍕</div>
         <div class="photo-slot" style="font-size:13px; color:#c0392b;">+ Add photo<br><span style="font-size:10px;">(coming soon)</span></div>
-        -->
       </div>
 
       <!-- Reviews -->
@@ -666,6 +664,7 @@
         if (navBtn) { navBtn.textContent = 'My Profile'; navBtn.href = 'profile.html'; }
         // Check admin status
         await checkAdmin(user);
+        await loadReviews(); // reload so edit buttons appear
         // Check if already favorited
         try {
           const userSnap = await getDoc(doc(db, 'users', user.uid));
