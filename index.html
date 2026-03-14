@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,7 +143,7 @@
   <nav class="navbar navbar-inverse">
     <div class="container-fluid" style="padding:0 10px;">
       <div class="navbar-header">
-        <button id="nav-toggle" type="button" class="navbar-btn" aria-expanded="false">
+        <button id="nav-toggle" type="button" class="navbar-toggle collapsed" aria-expanded="false">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
         </button>
@@ -315,10 +316,8 @@
         .catch(function(e) { console.warn('Geocode failed:', r.name, e); });
     }
 
-    // Shared marker registry (accessible by both plain and module scripts)
     window.allMarkers = [];
 
-    // Place a single marker on the map
     function addMarker(docId, r) {
       if (!r.lat || !r.lng) return;
 
@@ -329,7 +328,6 @@
         return '<span>' + t + '</span>';
       }).join('');
 
-      // Build star display from avgRating if available
       var starsHtml = '';
       if (r.avgRating) {
         var full  = Math.round(r.avgRating);
@@ -356,7 +354,6 @@
       return marker;
     }
 
-    // Search helpers
     function geocodeAndPan(query, statusEl, label) {
       var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query);
       statusEl.textContent = 'Searching…';
@@ -396,12 +393,13 @@
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
 
-    // Hamburger
-    document.getElementById('nav-toggle').addEventListener('click', function() {
+    // Hamburger — stop Bootstrap intercepting, handle manually
+    document.getElementById('nav-toggle').addEventListener('click', function(e) {
+      e.stopPropagation();
       var nav = document.getElementById('bs-navbar');
       nav.classList.toggle('open');
       this.setAttribute('aria-expanded', nav.classList.contains('open'));
-    });
+    }, true); // true = capture phase, fires before Bootstrap
   </script>
 
   <!-- ── Firebase: load restaurants near a location ──────────────── -->
@@ -423,17 +421,11 @@
 
     sessionStorage.setItem('sf-firebase-config', JSON.stringify(firebaseConfig));
 
-    // ── Load 3 most recent reviews ────────────────────────────────────
-    // ── Load Most Reviewed restaurants ──────────────────────────────────
     async function loadMostReviewed() {
       const el = document.getElementById('most-reviewed-list');
       if (!el) return;
       try {
-        const q = query(
-          collection(db, 'restaurants'),
-          orderBy('reviewCount', 'desc'),
-          limit(5)
-        );
+        const q = query(collection(db, 'restaurants'), orderBy('reviewCount', 'desc'), limit(5));
         const snap = await getDocs(q);
         if (snap.empty) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
         el.innerHTML = '';
@@ -452,16 +444,12 @@
       }
     }
 
-    // ── Load Top Reviewers ────────────────────────────────────────────────
     async function loadTopReviewers() {
       const el = document.getElementById('top-reviewers-list');
       if (!el) return;
       try {
-        // Fetch all reviews and tally by username client-side
-        // (Firestore doesn't support group-by natively)
         const snap = await getDocs(collection(db, 'reviews'));
-        // Tally by uid (when available) or username, preserving link info
-        const counts = {}; // key -> { name, uid, count }
+        const counts = {};
         snap.forEach(d => {
           const rv = d.data();
           const key  = rv.uid || rv.username || 'Anonymous';
@@ -470,9 +458,7 @@
           if (!counts[key]) counts[key] = { name, uid: rv.uid || null, count: 0 };
           counts[key].count++;
         });
-        const sorted = Object.values(counts)
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
+        const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
         if (sorted.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
         el.innerHTML = sorted.map(({ name, uid, count }) => {
           const nameHtml = uid
@@ -493,7 +479,6 @@
         const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(3));
         const snap = await getDocs(q);
         if (snap.empty) { container.innerHTML = ''; return; }
-
         const cards = [];
         for (const reviewDoc of snap.docs) {
           const rv = reviewDoc.data();
@@ -527,10 +512,9 @@
     loadMostReviewed();
     loadTopReviewers();
 
-    // ── Load restaurants within a lat/lng bounding box ───────────────
     const RADIUS = 0.25;
     const CACHE_KEY = 'sf-restaurants-cache';
-    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+    const CACHE_TTL = 30 * 60 * 1000;
 
     function getCachedRestaurants(lat, lng) {
       try {
@@ -545,9 +529,7 @@
 
     function setCachedRestaurants(lat, lng, restaurants) {
       try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-          ts: Date.now(), clat: lat, clng: lng, restaurants
-        }));
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), clat: lat, clng: lng, restaurants }));
       } catch(e) {}
     }
 
@@ -555,59 +537,37 @@
       window.allMarkers.forEach(function(m) { map.removeLayer(m); });
       window.allMarkers = [];
       let count = 0;
-      restaurants.forEach(function(item) {
-        addMarker(item.id, item.data);
-        count++;
-      });
+      restaurants.forEach(function(item) { addMarker(item.id, item.data); count++; });
       setSlicesCount(count + ' slice' + (count !== 1 ? 's' : '') + ' found in your area!');
       var nameInput = document.getElementById('name-search-input');
-      if (nameInput && nameInput.value.trim()) {
-        window.filterMarkersByName(nameInput.value);
-      }
+      if (nameInput && nameInput.value.trim()) window.filterMarkersByName(nameInput.value);
     }
 
     window.loadRestaurantsNear = async function(lat, lng) {
       setSlicesCount('Searching…');
-
-      // Serve from cache if available
       const cached = getCachedRestaurants(lat, lng);
-      if (cached) {
-        console.log('Loading ' + cached.length + ' restaurants from cache');
-        renderRestaurants(cached);
-        return;
-      }
-
+      if (cached) { renderRestaurants(cached); return; }
       try {
-        const q = query(
-          collection(db, 'restaurants'),
-          where('lat', '>=', lat - RADIUS),
-          where('lat', '<=', lat + RADIUS)
-        );
+        const q = query(collection(db, 'restaurants'), where('lat', '>=', lat - RADIUS), where('lat', '<=', lat + RADIUS));
         const snapshot = await getDocs(q);
         const restaurants = [];
-
         snapshot.forEach(function(docSnap) {
           const r = docSnap.data();
-          if (r.lat && r.lng &&
-              r.lng >= lng - RADIUS && r.lng <= lng + RADIUS) {
+          if (r.lat && r.lng && r.lng >= lng - RADIUS && r.lng <= lng + RADIUS) {
             restaurants.push({ id: docSnap.id, data: r });
           }
         });
-
         setCachedRestaurants(lat, lng, restaurants);
         renderRestaurants(restaurants);
-
       } catch(e) {
         setSlicesCount('Could not load restaurants');
         console.error('Firestore error:', e);
       }
     };
 
-    // ── Name filter ───────────────────────────────────────────────────
     window.filterMarkersByName = function(query) {
       var q = query.toLowerCase().trim();
       var matchedMarkers = [];
-
       window.allMarkers.forEach(function(m) {
         if (!q || m._restaurantName.indexOf(q) !== -1) {
           if (!map.hasLayer(m)) map.addLayer(m);
@@ -616,11 +576,9 @@
           if (map.hasLayer(m)) map.removeLayer(m);
         }
       });
-
       var total = window.allMarkers.length;
       if (q && matchedMarkers.length > 0) {
-        var group = L.featureGroup(matchedMarkers);
-        map.fitBounds(group.getBounds().pad(0.3));
+        map.fitBounds(L.featureGroup(matchedMarkers).getBounds().pad(0.3));
         setSlicesCount(matchedMarkers.length + ' match' + (matchedMarkers.length !== 1 ? 'es' : '') + ' for "' + query + '"');
       } else if (q && matchedMarkers.length === 0) {
         setSlicesCount('No matches for "' + query + '"');
@@ -629,7 +587,6 @@
       }
     };
 
-    // ── On page load: use geolocation to load nearby restaurants ─────
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         function(pos) { window.loadRestaurantsNear(pos.coords.latitude, pos.coords.longitude); },
@@ -640,21 +597,15 @@
       window.loadRestaurantsNear(37.7749, -122.4194);
     }
 
-    // ── Nav auth state ────────────────────────────────────────────────
     const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js');
     const auth = getAuth(app);
     onAuthStateChanged(auth, (user) => {
       const btn = document.getElementById('nav-auth-btn');
       if (!btn) return;
-      if (user) {
-        btn.textContent = user.displayName || 'My Profile';
-        btn.href = 'profile.html';
-      } else {
-        btn.textContent = 'Login';
-        btn.href = 'profile.html';
-      }
+      btn.textContent = user ? (user.displayName || 'My Profile') : 'Login';
+      btn.href = 'profile.html';
     });
-
   </script>
 
 </body>
+</html>
