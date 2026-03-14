@@ -107,6 +107,24 @@
     }
 
     /* Frozen pizza detail panel */
+    /* Edit pizza modal */
+    #edit-pizza-modal {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6); z-index: 9999; overflow-y: auto;
+    }
+    #edit-pizza-modal-inner {
+      background: #fff; max-width: 560px; margin: 40px auto;
+      border-radius: 8px; padding: 28px;
+    }
+    #edit-pizza-modal-inner h4 {
+      font-family: 'Alfa Slab One', serif; color: #c0392b; margin-top: 0; margin-bottom: 20px;
+    }
+    /* Inline review editing */
+    .review-edit-form { margin-top: 8px; padding: 10px; background: #f9f9f9; border-radius: 6px; border: 1px solid #eee; }
+    .review-edit-stars { display: flex; gap: 6px; margin-bottom: 8px; }
+    .review-edit-stars span { font-size: 22px; cursor: pointer; color: #ccc; transition: color 0.1s; }
+    .review-edit-stars span.active { color: #c0392b; }
+
     #detail-panel {
       display: none;
       padding: 20px;
@@ -221,7 +239,13 @@
           <!-- Detail view -->
           <div id="detail-panel">
             <span class="back-btn" onclick="showList()">← Back to all frozen pizzas</span>
-            <h3 id="detail-name"></h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <h3 id="detail-name" style="margin:0;"></h3>
+              <div id="admin-pizza-btns" style="display:none; gap:8px; display:none;">
+                <button class="btn btn-warning btn-xs" onclick="openEditPizzaModal()">✏️ Edit</button>
+                <button class="btn btn-danger btn-xs" onclick="deletePizza()">🗑 Delete</button>
+              </div>
+            </div>
             <div id="detail-stars"></div>
             <div id="detail-review-count" style="font-size:13px; color:#888; margin-top:4px;"></div>
             <div id="detail-reviews"></div>
@@ -272,6 +296,34 @@
     </div>
   </div>
 
+  <!-- Edit Pizza Modal -->
+  <div id="edit-pizza-modal">
+    <div id="edit-pizza-modal-inner">
+      <h4>✏️ Edit Frozen Pizza</h4>
+      <div class="form-group">
+        <label style="font-size:13px;">Name <span style="color:#c0392b">*</span></label>
+        <input type="text" id="ep-name" class="form-control input-sm">
+      </div>
+      <div class="form-group">
+        <label style="font-size:13px;">Brand</label>
+        <input type="text" id="ep-brand" class="form-control input-sm">
+      </div>
+      <div class="form-group">
+        <label style="font-size:13px;">Description</label>
+        <textarea id="ep-description" class="form-control input-sm" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label style="font-size:13px;">Slug</label>
+        <input type="text" id="ep-slug" class="form-control input-sm">
+      </div>
+      <div style="margin-top:16px; display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-danger btn-sm" onclick="saveEditPizza()">Save Changes</button>
+        <button class="btn btn-default btn-sm" onclick="closeEditPizzaModal()">Cancel</button>
+        <span id="ep-status" style="font-size:13px; font-weight:bold;"></span>
+      </div>
+    </div>
+  </div>
+
   <footer><p>SliceFinder &copy;2026</p></footer>
 
   <script>
@@ -284,7 +336,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
-    import { getFirestore, collection, getDocs, addDoc, doc, getDoc, query, orderBy, where, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
+    import { getFirestore, collection, getDocs, addDoc, doc, getDoc, deleteDoc, query, orderBy, where, serverTimestamp, updateDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
     import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
 
     const firebaseConfig = {
@@ -462,10 +514,17 @@
             const rv = d.data();
             const full = rv.rating ? Math.round(rv.rating) : 0;
             const stars = full ? '★'.repeat(full) + '☆'.repeat(5 - full) : '';
-            return `<div class="review-block">
+            const canEdit = currentUser && (isAdmin || currentUser.uid === rv.uid);
+            const editBtns = canEdit ? `
+              <div style="margin-top:6px; display:flex; gap:6px;">
+                <button class="btn btn-default btn-xs" onclick="editFrozenReview('${d.id}', ${rv.rating||0}, ${JSON.stringify(rv.text||'')})">✏️ Edit</button>
+                <button class="btn btn-danger btn-xs" onclick="deleteFrozenReview('${d.id}')">🗑</button>
+              </div>` : '';
+            return `<div class="review-block" id="frv-${d.id}">
               <div class="review-user">${rv.username || 'Anonymous'}</div>
               ${stars ? `<div class="review-stars">${stars}</div>` : ''}
               <div class="review-text">${rv.text || ''}</div>
+              ${editBtns}
             </div>`;
           }).join('');
         }
@@ -520,6 +579,149 @@
     };
 
     loadPizzas();
+
+    // ── isAdmin flag ──────────────────────────────────────────────────
+    let isAdmin = false;
+
+    // Update auth state handler to also set isAdmin and show edit buttons
+    // (patch into existing onAuthStateChanged by hooking showDetail)
+    const _origShowDetail = window.showDetail;
+    window.showDetail = async function(id) {
+      await _origShowDetail(id);
+      // Show admin buttons if admin
+      const adminBtns = document.getElementById('admin-pizza-btns');
+      if (adminBtns && isAdmin) adminBtns.style.display = 'flex';
+    };
+
+    // Check admin on auth — patch into existing handler
+    const _origAuth = auth;
+    import('https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js').then(({ onAuthStateChanged: oac }) => {
+      oac(_origAuth, async (user) => {
+        if (!user) { isAdmin = false; return; }
+        try {
+          const uSnap = await getDoc(doc(db, 'users', user.uid));
+          isAdmin = uSnap.exists() && uSnap.data().isAdmin === true;
+        } catch(e) {}
+      });
+    });
+
+    // ── Edit pizza modal ──────────────────────────────────────────────
+    window.openEditPizzaModal = function() {
+      const p = currentPizza;
+      if (!p) return;
+      document.getElementById('ep-name').value        = p.name        || '';
+      document.getElementById('ep-brand').value       = p.brand       || '';
+      document.getElementById('ep-description').value = p.description || '';
+      document.getElementById('ep-slug').value        = p.slug        || '';
+      document.getElementById('ep-status').textContent = '';
+      document.getElementById('edit-pizza-modal').style.display = 'block';
+    };
+    window.closeEditPizzaModal = function() {
+      document.getElementById('edit-pizza-modal').style.display = 'none';
+    };
+    document.getElementById('edit-pizza-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeEditPizzaModal();
+    });
+
+    window.saveEditPizza = async function() {
+      const statusEl = document.getElementById('ep-status');
+      const name = document.getElementById('ep-name').value.trim();
+      if (!name) { statusEl.textContent = '❌ Name required.'; statusEl.style.color='red'; return; }
+      statusEl.textContent = 'Saving…'; statusEl.style.color = '#888';
+      try {
+        const updates = {
+          name,
+          brand:       document.getElementById('ep-brand').value.trim()       || null,
+          description: document.getElementById('ep-description').value.trim() || null,
+          slug:        document.getElementById('ep-slug').value.trim()         || null,
+        };
+        await updateDoc(doc(db, 'frozen_pizzas', currentPizza.id), updates);
+        Object.assign(currentPizza, updates);
+        // Update local allPizzas
+        const local = allPizzas.find(p => p.id === currentPizza.id);
+        if (local) Object.assign(local, updates);
+        document.getElementById('detail-name').textContent = name;
+        statusEl.textContent = '✅ Saved!'; statusEl.style.color = 'green';
+        setTimeout(closeEditPizzaModal, 800);
+      } catch(e) {
+        statusEl.textContent = '❌ ' + e.message; statusEl.style.color = 'red';
+      }
+    };
+
+    window.deletePizza = async function() {
+      if (!currentPizza) return;
+      if (!confirm(`Delete "${currentPizza.name}"? This cannot be undone.`)) return;
+      try {
+        await deleteDoc(doc(db, 'frozen_pizzas', currentPizza.id));
+        allPizzas = allPizzas.filter(p => p.id !== currentPizza.id);
+        showList();
+        applyFilterSort();
+      } catch(e) { alert('Delete failed: ' + e.message); }
+    };
+
+    // ── Edit / delete review (frozen_reviews) ─────────────────────────
+    window.editFrozenReview = function(reviewId, currentRating, currentText) {
+      const block = document.getElementById('frv-' + reviewId);
+      if (!block) return;
+      // Replace content with inline edit form
+      const stars = [1,2,3,4,5].map(v =>
+        `<span data-val="${v}" class="${v <= currentRating ? 'active' : ''}" onclick="setEditStar(this,'frv-edit-${reviewId}')">${'★'}</span>`
+      ).join('');
+      block.innerHTML = `
+        <div class="review-edit-form" id="frv-edit-${reviewId}">
+          <div class="review-edit-stars">${stars}</div>
+          <input type="hidden" id="frv-rating-${reviewId}" value="${currentRating}">
+          <textarea id="frv-text-${reviewId}" class="form-control input-sm" rows="2" style="margin-bottom:8px;">${currentText}</textarea>
+          <button class="btn btn-danger btn-xs" onclick="saveFrozenReview('${reviewId}')">Save</button>
+          <button class="btn btn-default btn-xs" onclick="showDetail(currentPizza.id)" style="margin-left:4px;">Cancel</button>
+          <span id="frv-status-${reviewId}" style="font-size:12px; margin-left:8px;"></span>
+        </div>`;
+    };
+
+    window.setEditStar = function(el, formId) {
+      const val = +el.dataset.val;
+      const reviewId = formId.replace('frv-edit-', '');
+      document.getElementById('frv-rating-' + reviewId).value = val;
+      el.parentElement.querySelectorAll('span').forEach(s => {
+        s.classList.toggle('active', +s.dataset.val <= val);
+      });
+    };
+
+    window.saveFrozenReview = async function(reviewId) {
+      const statusEl = document.getElementById('frv-status-' + reviewId);
+      const rating = +document.getElementById('frv-rating-' + reviewId).value;
+      const text   = document.getElementById('frv-text-' + reviewId).value.trim();
+      if (!rating) { statusEl.textContent = '❌ Pick a rating.'; return; }
+      statusEl.textContent = 'Saving…';
+      try {
+        await updateDoc(doc(db, 'frozen_reviews', reviewId), { rating, text });
+        // Recalculate avg
+        const allRevSnap = await getDocs(query(collection(db, 'frozen_reviews'), where('pizzaId', '==', currentPizza.id)));
+        let sum = 0, count = 0;
+        allRevSnap.forEach(d => { if (d.data().rating) { sum += d.data().rating; count++; } });
+        const avg = Math.round((sum / count) * 10) / 10;
+        await updateDoc(doc(db, 'frozen_pizzas', currentPizza.id), { avgRating: avg, reviewCount: count });
+        const local = allPizzas.find(p => p.id === currentPizza.id);
+        if (local) { local.avgRating = avg; local.reviewCount = count; }
+        showDetail(currentPizza.id);
+      } catch(e) { statusEl.textContent = '❌ ' + e.message; }
+    };
+
+    window.deleteFrozenReview = async function(reviewId) {
+      if (!confirm('Delete this review?')) return;
+      try {
+        await deleteDoc(doc(db, 'frozen_reviews', reviewId));
+        const allRevSnap = await getDocs(query(collection(db, 'frozen_reviews'), where('pizzaId', '==', currentPizza.id)));
+        let sum = 0, count = 0;
+        allRevSnap.forEach(d => { if (d.data().rating) { sum += d.data().rating; count++; } });
+        const avg = count > 0 ? Math.round((sum / count) * 10) / 10 : null;
+        await updateDoc(doc(db, 'frozen_pizzas', currentPizza.id), { avgRating: avg, reviewCount: count });
+        const local = allPizzas.find(p => p.id === currentPizza.id);
+        if (local) { local.avgRating = avg; local.reviewCount = count; }
+        showDetail(currentPizza.id);
+      } catch(e) { alert('Delete failed: ' + e.message); }
+    };
+
   </script>
 
 </body>
