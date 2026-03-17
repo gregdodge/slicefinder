@@ -273,9 +273,9 @@
       <div id="bs-navbar">
         <ul class="nav navbar-nav">
           <li class="active"><a href="index.html">Restaurants</a></li>
-          <li><a href="frozen.html">Frozen Pizza</a></li>
-          <li><a href="news.html">Pizza News</a></li>
-          <li><a href="profile.html">My Profile</a></li>
+          <li><a href="#">Frozen Pizza</a></li>
+          <li><a href="#">Pizza News</a></li>
+          <li><a href="#">My Profile</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li><a href="profile.html" id="nav-auth-btn" style="color:#c0392b !important;font-weight:bold;">Login</a></li>
@@ -338,8 +338,8 @@
       <div class="photo-grid" id="photo-grid">
         <!-- placeholder slots -->
         <div class="photo-slot">🍕</div>
-        <!--<div class="photo-slot">🍕</div>
-        <div class="photo-slot">🍕</div> -->
+        <div class="photo-slot">🍕</div>
+        <div class="photo-slot">🍕</div>
         <div class="photo-slot" style="font-size:13px; color:#c0392b;">+ Add photo<br><span style="font-size:10px;">(coming soon)</span></div>
       </div>
 
@@ -624,7 +624,7 @@
         const canEdit = currentUser && (isAdmin || currentUser.uid === rv.uid);
         const editBtns = canEdit ? `
           <div class="review-edit-btns">
-            <button class="btn btn-default btn-xs" onclick="editReview('${rv._id}', ${rv.rating||0}, ${JSON.stringify(rv.text||'')})">✏️ Edit</button>
+            <button class="btn btn-default btn-xs" data-id="${rv._id}" data-rating="${rv.rating||0}" onclick="editReview(this)">✏️ Edit</button>
             <button class="btn btn-danger btn-xs" onclick="deleteReview('${rv._id}')">🗑</button>
           </div>` : '';
         const div = document.createElement('div');
@@ -892,9 +892,13 @@
 
 
     // ── Edit / delete review ──────────────────────────────────────────
-    window.editReview = function(reviewId, currentRating, currentText) {
+    window.editReview = function(btn) {
+      const reviewId = btn.dataset.id;
+      const currentRating = +btn.dataset.rating;
       const card = document.getElementById('rv-' + reviewId);
       if (!card) return;
+      // Get current text from the rendered card
+      const currentText = card.querySelector('.review-text')?.textContent || '';
       const starsHtml = [1,2,3,4,5].map(v =>
         `<span data-val="${v}" class="${v <= currentRating ? 'on' : ''}" onclick="setReviewEditStar(this,'${reviewId}')">${'★'}</span>`
       ).join('');
