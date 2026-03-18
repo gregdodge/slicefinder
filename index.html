@@ -418,28 +418,17 @@
     async function loadMostReviewed() {
       const el = document.getElementById('most-reviewed-list');
       if (!el) return;
-      const CACHE_KEY = 'sf-most-reviewed';
-      const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+      // Read a single pre-computed summary doc — 1 read instead of scanning all restaurants
       try {
-        const raw = sessionStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const { ts, html } = JSON.parse(raw);
-          if (Date.now() - ts < CACHE_TTL) { el.innerHTML = html; return; }
-        }
-      } catch(e) {}
-      try {
-        const q = query(collection(db, 'restaurants'), orderBy('reviewCount', 'desc'), limit(5));
-        const snap = await getDocs(q);
-        if (snap.empty) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        let html = '';
-        snap.forEach(d => {
-          const r = d.data();
-          if (!r.name) return;
-          html += `<li style="margin-bottom:4px;"><a href="restaurant.html?id=${d.id}" style="color:#c0392b;">${r.name}</a>` +
-            (r.reviewCount ? ` <span class="badge" style="background:#c0392b;">${r.reviewCount}</span>` : '') + '</li>';
-        });
-        el.innerHTML = html;
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), html })); } catch(e) {}
+        const snap = await getDoc(doc(db, 'stats', 'most_reviewed'));
+        if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+        const restaurants = snap.data().restaurants || [];
+        if (restaurants.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+        el.innerHTML = restaurants.map(({ id, name, reviewCount }) =>
+          `<li style="margin-bottom:4px;"><a href="restaurant.html?id=${id}" style="color:#c0392b;">${name}</a>` +
+          (reviewCount ? ` <span class="badge" style="background:#c0392b;">${reviewCount}</span>` : '') +
+          '</li>'
+        ).join('');
       } catch(e) {
         el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
         console.warn('Most reviewed error:', e);
