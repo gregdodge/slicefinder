@@ -449,43 +449,18 @@
     async function loadTopReviewers() {
       const el = document.getElementById('top-reviewers-list');
       if (!el) return;
-
-      // Cache in sessionStorage for 60 minutes to avoid reading all reviews on every load
-      const CACHE_KEY = 'sf-top-reviewers';
-      const CACHE_TTL = 60 * 60 * 1000;
+      // Read a single pre-computed summary doc — 1 read instead of 400+
       try {
-        const raw = sessionStorage.getItem(CACHE_KEY);
-        if (raw) {
-          const { ts, html } = JSON.parse(raw);
-          if (Date.now() - ts < CACHE_TTL) {
-            el.innerHTML = html;
-            return;
-          }
-        }
-      } catch(e) {}
-
-      try {
-        const snap = await getDocs(collection(db, 'reviews'));
-        const counts = {};
-        snap.forEach(d => {
-          const rv = d.data();
-          const key  = rv.uid || rv.username || 'Anonymous';
-          const name = rv.username || rv.uid || 'Anonymous';
-          if (name === 'Anonymous') return;
-          if (!counts[key]) counts[key] = { name, uid: rv.uid || null, count: 0 };
-          counts[key].count++;
-        });
-        const sorted = Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5);
-        if (sorted.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        const html = sorted.map(({ name, uid, count }) => {
+        const snap = await getDoc(doc(db, 'stats', 'top_reviewers'));
+        if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+        const reviewers = snap.data().reviewers || [];
+        if (reviewers.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+        el.innerHTML = reviewers.map(({ name, uid, count }) => {
           const nameHtml = uid
             ? `<a href="profile.html?user=${uid}" style="color:#c0392b;">${name}</a>`
             : `<span>${name}</span>`;
           return `<li style="margin-bottom:4px;">${nameHtml} &nbsp;<span class="badge" style="background:#555;">${count}</span></li>`;
         }).join('');
-        el.innerHTML = html;
-        // Cache the rendered HTML
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), html })); } catch(e) {}
       } catch(e) {
         el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
         console.warn('Top reviewers error:', e);
