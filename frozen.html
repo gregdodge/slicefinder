@@ -406,7 +406,7 @@
         sortList('rating');
         renderTopRated();
         document.getElementById('frozen-count').textContent =
-          allPizzas.length + ' frozen pizza' + (allPizzas.length !== 1 ? 's' : '') + ' ranked';
+          allPizzas.length + ' frozen pizza' + (allPizzas.length !== 1 ? 's' : '') + '';
       } catch(e) {
         document.getElementById('loading-msg').textContent = 'Could not load frozen pizzas.';
         console.error(e);
