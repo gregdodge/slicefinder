@@ -273,9 +273,9 @@
       <div id="bs-navbar">
         <ul class="nav navbar-nav">
           <li class="active"><a href="index.html">Restaurants</a></li>
-          <li><a href="frozen.html">Frozen Pizza</a></li>
-          <li><a href="news.html">Pizza News</a></li>
-          <li><a href="profile.html">My Profile</a></li>
+          <li><a href="#">Frozen Pizza</a></li>
+          <li><a href="#">Pizza News</a></li>
+          <li><a href="#">My Profile</a></li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li><a href="profile.html" id="nav-auth-btn" style="color:#c0392b !important;font-weight:bold;">Login</a></li>
@@ -337,10 +337,8 @@
       <div class="section-title">📸 Photos</div>
       <div class="photo-grid" id="photo-grid">
         <!-- placeholder slots -->
-        <!--
         <div class="photo-slot">🍕</div>
         <div class="photo-slot">🍕</div>
-        -->
         <div class="photo-slot">🍕</div>
         <div class="photo-slot" style="font-size:13px; color:#c0392b;">+ Add photo<br><span style="font-size:10px;">(coming soon)</span></div>
       </div>
@@ -775,6 +773,7 @@
         document.getElementById('rv-rating').value = 0;
         highlightStars(0);
         await loadReviews();
+        await updateTopReviewersStats();
       } catch(e) {
         console.error('Review submit error:', e);
         statusEl.textContent = '❌ ' + e.message;
@@ -951,6 +950,30 @@
       } catch(e) { statusEl.textContent = '❌ ' + e.message; }
     };
 
+    // ── Update top reviewers stats doc ───────────────────────────────
+    async function updateTopReviewersStats() {
+      try {
+        const snap = await getDocs(collection(db, 'reviews'));
+        const counts = {};
+        snap.forEach(d => {
+          const rv = d.data();
+          const key  = rv.uid || rv.username || 'Anonymous';
+          const name = rv.username || rv.uid || 'Anonymous';
+          if (name === 'Anonymous') return;
+          if (!counts[key]) counts[key] = { name, uid: rv.uid || null, count: 0 };
+          counts[key].count++;
+        });
+        const reviewers = Object.values(counts)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+          .map(({ name, uid, count }) => ({ name, uid: uid || null, count }));
+        await updateDoc(doc(db, 'stats', 'top_reviewers'), { reviewers }).catch(async () => {
+          const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js');
+          await setDoc(doc(db, 'stats', 'top_reviewers'), { reviewers });
+        });
+      } catch(e) { console.warn('Could not update top reviewers stats:', e); }
+    }
+
     window.deleteReview = async function(reviewId) {
       if (!confirm('Delete this review?')) return;
       try {
@@ -963,6 +986,7 @@
           reviewCount: count,
         });
         await loadReviews();
+        await updateTopReviewersStats();
       } catch(e) { alert('Delete failed: ' + e.message); }
     };
 
