@@ -648,11 +648,12 @@
         const userData = userSnap.exists() ? userSnap.data() : {};
         const displayName = userData.displayName || 'SliceFinder User';
 
-        // Update page title and nav to show the user's name
+        // Update page title, nav, and tab label to show the user's name
         document.title = displayName + ' – SliceFinder';
-        const navActive = document.querySelector('.profile-tab.active, li.active a[href="profile.html"]');
         const navLink = document.querySelector('li.active a[href="profile.html"]');
         if (navLink) navLink.textContent = displayName;
+        const reviewsTab = document.querySelector('.profile-tab.active');
+        if (reviewsTab) reviewsTab.textContent = displayName + "'s Reviews";
 
         const avatarEl = document.getElementById('profile-avatar');
         if (userData.photoURL) {
