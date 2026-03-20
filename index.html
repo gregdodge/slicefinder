@@ -556,28 +556,11 @@
         }
       }
 
-      // ── Scenario 3: no listings at all — fall back to global recent reviews ──
-      try {
-        const q = query(collection(db, 'reviews'), orderBy('createdAt', 'desc'), limit(3));
-        const snap = await getDocs(q);
-        if (snap.empty) { container.innerHTML = ''; return; }
-        const cards = [];
-        for (const reviewDoc of snap.docs) {
-          const rv = reviewDoc.data();
-          let restName = '', restId = rv.restaurantId || '';
-          if (restId) {
-            try {
-              const restSnap = await getDoc(doc(db, 'restaurants', restId));
-              if (restSnap.exists()) restName = restSnap.data().name || '';
-            } catch(e) {}
-          }
-          cards.push(buildReviewCard(rv, restName, restId));
-        }
-        container.innerHTML = cards.join('');
-      } catch(e) {
-        container.innerHTML = '';
-        console.warn('Could not load recent reviews:', e);
-      }
+      // ── Scenario 3: no listings in area — show friendly empty state ──
+      container.innerHTML =
+        `<div class="recent-review-card" style="color:#aaa; font-style:italic;">
+          No pizza spots here yet — <a href="add-restaurant.html" style="color:#c0392b; font-weight:bold;">add one!</a>
+        </div>`;
     };
 
     // Initial load — global fallback until map loads
