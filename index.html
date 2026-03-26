@@ -682,7 +682,7 @@
           collection(db, 'restaurants'),
           where('lat', '>=', lat - RADIUS),
           where('lat', '<=', lat + RADIUS),
-          limit(300)  // cap raw Firestore reads; we filter by lng and sort client-side
+          limit(500)  // cap raw Firestore reads; we filter by lng and sort client-side
         );
         const snapshot = await getDocs(q);
         const restaurants = [];
