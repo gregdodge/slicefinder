@@ -901,7 +901,7 @@
     function renderPhotos(photos) {
       const grid = document.getElementById('photo-grid');
       if (!photos || photos.length === 0) {
-        grid.innerHTML = '<p style="color:#aaa; font-size:13px; margin-bottom:16px;">No photos yet...</p>';
+        grid.innerHTML = '<p style="color:#aaa; font-size:13px; margin-bottom:10px;">No photos yet...</p>';
         return;
       }
       grid.innerHTML = photos.map((p, i) =>
