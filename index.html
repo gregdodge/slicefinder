@@ -694,7 +694,7 @@
         });
         // Sort by avgRating desc so best restaurants show first, cap at 100 pins
         restaurants.sort((a, b) => (b.data.avgRating || 0) - (a.data.avgRating || 0));
-        const capped = restaurants.slice(0, 100);
+        const capped = restaurants.slice(0, 150);
         setCachedRestaurants(lat, lng, capped);
         renderRestaurants(capped);
       } catch(e) {
