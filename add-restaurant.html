@@ -373,7 +373,7 @@
       try {
         const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js');
         const ref = await addDoc(collection(db, 'restaurants'), { ...data, createdAt: serverTimestamp() });
-        statusEl.innerHTML = `✅ "${name}" added! <a href="restaurant.html?id=${ref.id}" style="color:#c0392b;font-weight:bold;">View listing → Rate it now!</a>`;
+        statusEl.innerHTML = `✅ A squirrel or cat has added "${name}" to the database!<br/><a href="restaurant.html?id=${ref.id}" style="color:#c0392b;font-weight:bold;">View listing → Rate it now!</a>`;
         statusEl.style.color = 'green';
         if (!coords) {
           statusEl.innerHTML += '<br><span style="color:#e67e22; font-size:12px; font-weight:normal;">⚠️ Could not auto-detect location — this restaurant won\'t appear on the map yet.</span>';
