@@ -711,7 +711,7 @@
     window.submitContact = async function() {
       const statusEl = document.getElementById('contact-status');
       const message  = document.getElementById('contact-message').value.trim();
-      if (!message) { statusEl.textContent = '❌ Please enter a message.'; statusEl.style.color = 'red'; return; }
+      if (!message) { statusEl.textContent = '❌ Gato asks for your message'; statusEl.style.color = 'red'; return; }
       statusEl.textContent = 'Sending…'; statusEl.style.color = '#888';
       try {
         await addDoc(collection(db, 'contact'), {
