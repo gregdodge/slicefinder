@@ -610,7 +610,7 @@
     window.submitSuggestion = async function() {
       const statusEl = document.getElementById('suggest-status');
       const name = document.getElementById('suggest-name').value.trim();
-      if (!name) { statusEl.textContent = 'Enter a frozen pizza name, yo'; statusEl.style.color = 'red'; return; }
+      if (!name) { statusEl.textContent = 'Please enter a frozen pizza name, yo'; statusEl.style.color = 'red'; return; }
       statusEl.textContent = 'Sending…'; statusEl.style.color = '#888';
       try {
         await addDoc(collection(db, 'suggestions'), {
