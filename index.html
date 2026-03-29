@@ -449,7 +449,7 @@
       var city  = document.getElementById('location-input').value.trim();
       var state = document.getElementById('state-input').value.trim();
       var statusEl = document.getElementById('search-status');
-      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
+      if (!city) { statusEl.textContent = 'Please to enter a city or ZIP'; return; }
       statusEl.textContent = '';
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
@@ -458,7 +458,7 @@
       var city  = document.getElementById('mobile-city-input').value.trim();
       var state = document.getElementById('mobile-state-input').value.trim();
       var statusEl = document.getElementById('mobile-search-status');
-      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
+      if (!city) { statusEl.textContent = 'Please to enter a city or ZIP'; return; }
       statusEl.textContent = '';
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
