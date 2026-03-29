@@ -254,7 +254,7 @@
         <div class="col-sm-8" style="display:flex;flex-direction:column;flex:1;">
           <div id="slices-header">
             <span id="slices-headline">
-              <a href="https://gregdodge.github.io/sf/images/sohungrysoscared.gif" style="text-decoration: none !important;" title="STRESSED"><span style="display: inline-block;">🍕</span></a> Find and rate the best pizza</span>
+              <a href="https://gregdodge.github.io/sf/images/sohungrysoscared.gif" style="text-decoration: none !important;"><span style="display: inline-block;">🍕</span></a> Find and rate the best pizza</span>
             <span id="slices-count">Loading…</span>
           </div>
           <div id="geo-status">Detecting your location…</div>
@@ -270,7 +270,7 @@
 
         <!-- Right Sidebar -->
         <div class="col-sm-2 sidenav">
-          <h5 style="font-size:16px;"><strong>Find your slice!</strong></h5>
+          <h5><strong>Find your slice</strong></h5>
           <form onsubmit="desktopSearch(event)">
             <div class="form-group" style="margin-bottom:6px;">
               <input type="text" id="location-input" class="form-control input-sm"
@@ -288,25 +288,20 @@
               placeholder="Filter by restaurant name…" autocomplete="off"
               oninput="filterMarkersByName(this.value)">
           </div>
-          
           <hr>
-          
-          <h5 style="padding-top:10px;"><strong>Something missing?</strong></h5>
-          <!-- <p style="font-size:12px;">Add a 🍕 spot</p> --> <!-- class="btn btn-default btn-sm btn-block" -->
-          <a href="add-restaurant.html" class="btn btn-danger btn-sm btn-block"><!--+ Add Restaurant-->Add a 🍕 Spot</a>
-
+          <h5><strong>Add a Pizza Place</strong></h5>
+          <p style="font-size:12px;">Know a great spot that's missing? Help the community!</p>
+          <a href="add-restaurant.html" class="btn btn-default btn-sm btn-block">+ Add Restaurant</a>
           <hr>
-
-          <h6 style="padding-top:10px;color:#737270;"><strong>Suggestions? Deep thoughts?</strong></h6>
-          <!--<p style="font-size:12px; color:#666;">Please share!</p>-->
+          <h5><strong>Questions or Suggestions?</strong></h5>
+          <p style="font-size:12px; color:#666;">We'd love to hear from you!</p>
           <div>
-            <input type="text" id="contact-name" class="form-control input-sm" placeholder="Your name (optional)" style="margin-bottom:6px;display:none !important;">
-            <textarea id="contact-message" class="form-control input-sm" rows="1" placeholder="Send us whatever!" style="margin-bottom:6px;"></textarea>
-            <input type="email" id="contact-email" class="form-control input-sm" placeholder="Email (optional)" style="margin-bottom:6px;display:none !important;">
-            <button class="btn btn-default btn-sm btn-block" onclick="submitContact()">Hit us up</button>
+            <input type="text" id="contact-name" class="form-control input-sm" placeholder="Your name (optional)" style="margin-bottom:6px;">
+            <input type="email" id="contact-email" class="form-control input-sm" placeholder="Email (optional)" style="margin-bottom:6px;">
+            <textarea id="contact-message" class="form-control input-sm" rows="3" placeholder="Your message…" style="margin-bottom:6px;"></textarea>
+            <button class="btn btn-danger btn-sm btn-block" onclick="submitContact()">Send</button>
             <div id="contact-status" style="font-size:12px; margin-top:6px; min-height:16px;"></div>
           </div>
-
 
           <div align="center" style="position:absolute;bottom:50px;">
             <a href="https://gregdodge.github.io/sf/images/ny-style.gif" style="border:none;"><img src="https://gregdodge.github.io/sf/images/mine.jpg" style="width:80%"/></a>
@@ -449,7 +444,7 @@
       var city  = document.getElementById('location-input').value.trim();
       var state = document.getElementById('state-input').value.trim();
       var statusEl = document.getElementById('search-status');
-      if (!city) { statusEl.textContent = 'Squirrel needs a city or ZIP'; return; }
+      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
       statusEl.textContent = '';
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
@@ -458,7 +453,7 @@
       var city  = document.getElementById('mobile-city-input').value.trim();
       var state = document.getElementById('mobile-state-input').value.trim();
       var statusEl = document.getElementById('mobile-search-status');
-      if (!city) { statusEl.textContent = 'Please to enter a city or ZIP'; return; }
+      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
       statusEl.textContent = '';
       geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
     }
@@ -646,7 +641,7 @@
 
     const RADIUS = 0.10;
     const CACHE_KEY = 'sf-restaurants-cache';
-    const CACHE_TTL = 30 * 60 * 1000;
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
     function getCachedRestaurants(lat, lng) {
       try {
@@ -711,7 +706,7 @@
     window.submitContact = async function() {
       const statusEl = document.getElementById('contact-status');
       const message  = document.getElementById('contact-message').value.trim();
-      if (!message) { statusEl.textContent = '↓ El gato asks for your thoughts '; statusEl.style.color = '#d9534f'; return; }
+      if (!message) { statusEl.textContent = '❌ Please enter a message.'; statusEl.style.color = 'red'; return; }
       statusEl.textContent = 'Sending…'; statusEl.style.color = '#888';
       try {
         await addDoc(collection(db, 'contact'), {
@@ -720,7 +715,7 @@
           message,
           createdAt: serverTimestamp(),
         });
-        statusEl.textContent = '✅ A squirrel or cat will advise';
+        statusEl.textContent = '✅ Thanks! We\'ll be in touch.';
         statusEl.style.color = 'green';
         document.getElementById('contact-name').value    = '';
         document.getElementById('contact-email').value   = '';
