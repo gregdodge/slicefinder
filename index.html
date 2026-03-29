@@ -1,772 +1,855 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍕</text></svg>'>
-  <title>SliceFinder - Find Your Slice</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alfa%20Slab%20One">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <style>
-    html, body {
-      height: 100%; margin: 0; padding: 0;
-      font-family: Tahoma, sans-serif;
-      overflow-x: hidden; max-width: 100%;
-    }
-    body { display: flex; flex-direction: column; }
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍕</text></svg>'>
+ <title>SliceFinder - Find Your Slice</title>
+ <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+ <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Alfa%20Slab%20One">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+ <style>
+   html, body {
+     height: 100%; margin: 0; padding: 0;
+     font-family: Tahoma, sans-serif;
+     overflow-x: hidden; max-width: 100%;
+   }
+   body { display: flex; flex-direction: column; }
 
-    .container-fluid { padding-left:0; padding-right:0; }
-    .row { margin-left:0; margin-right:0; }
-    .col-sm-2, .col-sm-8 { padding-left:0; padding-right:0; }
-    .col-sm-8 { width:auto; flex:1; }
 
-    .navbar { margin-bottom:0; border-radius:0; width:100%; flex-shrink:0; }
-    .navbar-brand { font-family:'Alfa Slab One',serif; color:#c0392b !important; font-size:24px; letter-spacing:1px; }
+   .container-fluid { padding-left:0; padding-right:0; }
+   .row { margin-left:0; margin-right:0; }
+   .col-sm-2, .col-sm-8 { padding-left:0; padding-right:0; }
+   .col-sm-8 { width:auto; flex:1; }
 
-    @media (max-width:767px) {
-      #bs-navbar { display:none; width:100%; }
-      #bs-navbar.in { display:block; }
-      #bs-navbar .nav > li > a { color:#fff !important; padding:10px 16px; }
-      #bs-navbar .nav > li > a:hover { background:#333 !important; }
-      #nav-toggle { display:block !important; }
-    }
-    @media (min-width:768px) {
-      #bs-navbar { display:block !important; }
-      #nav-toggle { display:none !important; }
-    }
 
-    .page-wrapper { flex:1; display:flex; flex-direction:column; width:100%; }
-    .row.content { flex:1; min-height:600px; display:flex; }
+   .navbar { margin-bottom:0; border-radius:0; width:100%; flex-shrink:0; }
+   .navbar-brand { font-family:'Alfa Slab One',serif; color:#c0392b !important; font-size:24px; letter-spacing:1px; }
 
-    .sidenav { padding:20px 14px; background-color:#f1f1f1; }
 
-    footer { background:#555; color:#fff; padding:15px; text-align:center; flex-shrink:0; }
-    footer p { margin:0; }
+   @media (max-width:767px) {
+     #bs-navbar { display:none; width:100%; }
+     #bs-navbar.in { display:block; }
+     #bs-navbar .nav > li > a { color:#fff !important; padding:10px 16px; }
+     #bs-navbar .nav > li > a:hover { background:#333 !important; }
+     #nav-toggle { display:block !important; }
+   }
+   @media (min-width:768px) {
+     #bs-navbar { display:block !important; }
+     #nav-toggle { display:none !important; }
+   }
 
-    #slices-header {
-      background-color:#c0392b; color:#fff;
-      font-family:'Alfa Slab One',serif; font-size:18px;
-      padding:8px 20px 8px 14px; letter-spacing:0.5px;
-      display:flex; justify-content:space-between; align-items:center;
-    }
-    #slices-headline { flex:1; }
-    #slices-count { font-size:14px; text-align:right; white-space:nowrap; padding-left:12px; }
 
-    #geo-status {
-      font-size:14px; font-weight:bold; color:#888;
-      text-align:center; padding:5px 0; min-height:18px;
-    }
+   .page-wrapper { flex:1; display:flex; flex-direction:column; width:100%; }
+   .row.content { flex:1; min-height:600px; display:flex; }
 
-    #map-frame { flex:1; min-height:400px; display:block; z-index:1; }
-    #recent-reviews {
-      display:flex; gap:10px; margin-bottom:10px;
-    }
-    .recent-review-card {
-      flex:1; background:#fff; border:1px solid #e0e0e0;
-      border-radius:6px; padding:8px 10px; font-size:12px;
-      min-width:0; overflow:hidden;
-    }
-    .recent-review-card .rr-name {
-      font-weight:bold; font-size:13px; white-space:nowrap;
-      overflow:hidden; text-overflow:ellipsis; margin-bottom:2px;
-    }
-    .recent-review-card .rr-name a { color:#c0392b; text-decoration:none; }
-    .recent-review-card .rr-name a:hover { text-decoration:underline; }
-    .recent-review-card .rr-stars { color:#c0392b; letter-spacing:1px; margin-bottom:3px; }
-    .recent-review-card .rr-text {
-      color:#555; overflow:hidden;
-      display:-webkit-box; -webkit-line-clamp:2;
-      -webkit-box-orient:vertical;
-    }
-    .recent-review-card .rr-user { color:#888; margin-top:4px; font-size:11px; }
-    @media (max-width:767px) {
-      .recent-reviews-label { display:none !important; }
-      .mobile-reviews-label { display:block !important; }
-      #recent-reviews {
-        display:block !important;
-        flex-direction:column;
-        padding:8px 12px !important;
-        gap:0;
-      }
-      #recent-reviews .recent-review-card:not(:first-child) { display:none; }
-      #recent-reviews .recent-review-card {
-        display:flex; align-items:center; gap:8px;
-        padding:6px 8px; border-radius:4px;
-        background:#fff; border:1px solid #e0e0e0;
-      }
-      #recent-reviews .recent-review-card .rr-name { margin:0; font-size:12px; flex:1; }
-      #recent-reviews .recent-review-card .rr-stars { font-size:11px; margin:0; }
-      #recent-reviews .recent-review-card .rr-text { display:none; }
-      #recent-reviews .recent-review-card .rr-user { display:none; }
-    }
 
-    .pizza-marker-wrap {
-      width:38px; height:38px;
-      cursor:pointer;
-      pointer-events: auto !important;
-    }
-    .pizza-marker {
-      width:38px; height:38px;
-      background:#c0392b; border:3px solid #fff;
-      border-radius:50%; display:flex; align-items:center;
-      justify-content:center; font-size:18px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.35);
-      cursor:pointer;
-      pointer-events: none;
-    }
+   .sidenav { padding:20px 14px; background-color:#f1f1f1; }
 
-    .leaflet-popup-content-wrapper { border-radius:8px; padding:0; overflow:hidden; }
-    .leaflet-popup-content { margin:0; min-width:200px; }
-    .popup-inner { padding:14px 16px; font-family:Tahoma,sans-serif; }
-    .popup-inner h4 { margin:0 0 4px; font-size:14px; color:#222; }
-    .popup-inner .popup-addr { font-size:12px; color:#666; margin-bottom:4px; }
-    .popup-inner .popup-stars { color:#c0392b; font-size:14px; margin-bottom:4px; }
-    .popup-inner .popup-hours { font-size:11px; color:#888; margin-bottom:8px; }
-    .popup-inner .popup-tags span {
-      display:inline-block; background:#f0e6e6; color:#c0392b;
-      border-radius:10px; padding:2px 8px; font-size:11px; margin:2px 2px 6px 0;
-    }
-    .popup-btn {
-      display:block; background:#c0392b; color:#fff !important;
-      padding:7px 14px; border-radius:4px; font-size:12px;
-      text-decoration:none !important; text-align:center;
-      margin-top:4px; font-weight:bold;
-    }
-    .popup-btn:hover { background:#a93226; }
 
-    #mobile-search {
-      display:none; padding:10px 12px 6px;
-      background:#f1f1f1; border-bottom:1px solid #ddd; width:100%;
-    }
-    #mobile-search-status { font-size:11px; color:#888; margin-top:4px; min-height:16px; }
-    #search-status { font-size:11px; color:#888; margin-top:4px; min-height:16px; }
+   footer { background:#555; color:#fff; padding:15px; text-align:center; flex-shrink:0; }
+   footer p { margin:0; }
 
-    #search-area-btn {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      background: #fff;
-      color: #c0392b;
-      border: 2px solid #c0392b;
-      border-radius: 20px;
-      padding: 6px 18px;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      display: none;
-      white-space: nowrap;
-      font-family: Tahoma, sans-serif;
-    }
-    #search-area-btn:hover { background: #c0392b; color: #fff; }
-    #map-frame { position: relative; }
 
-    @media screen and (max-width:800px) {
-      #mobile-search { display:block; }
-      .col-sm-2 { display:none !important; }
-      .col-sm-8 { width:100% !important; }
-      .row.content { min-height:auto; }
-      #slices-count { display:none; }
-    }
-  </style>
+   #slices-header {
+     background-color:#c0392b; color:#fff;
+     font-family:'Alfa Slab One',serif; font-size:18px;
+     padding:8px 20px 8px 14px; letter-spacing:0.5px;
+     display:flex; justify-content:space-between; align-items:center;
+   }
+   #slices-headline { flex:1; }
+   #slices-count { font-size:14px; text-align:right; white-space:nowrap; padding-left:12px; }
+
+
+   #geo-status {
+     font-size:14px; font-weight:bold; color:#888;
+     text-align:center; padding:5px 0; min-height:18px;
+   }
+
+
+   #map-frame { flex:1; min-height:400px; display:block; z-index:1; }
+   #recent-reviews {
+     display:flex; gap:10px; margin-bottom:10px;
+   }
+   .recent-review-card {
+     flex:1; background:#fff; border:1px solid #e0e0e0;
+     border-radius:6px; padding:8px 10px; font-size:12px;
+     min-width:0; overflow:hidden;
+   }
+   .recent-review-card .rr-name {
+     font-weight:bold; font-size:13px; white-space:nowrap;
+     overflow:hidden; text-overflow:ellipsis; margin-bottom:2px;
+   }
+   .recent-review-card .rr-name a { color:#c0392b; text-decoration:none; }
+   .recent-review-card .rr-name a:hover { text-decoration:underline; }
+   .recent-review-card .rr-stars { color:#c0392b; letter-spacing:1px; margin-bottom:3px; }
+   .recent-review-card .rr-text {
+     color:#555; overflow:hidden;
+     display:-webkit-box; -webkit-line-clamp:2;
+     -webkit-box-orient:vertical;
+   }
+   .recent-review-card .rr-user { color:#888; margin-top:4px; font-size:11px; }
+   @media (max-width:767px) {
+     .recent-reviews-label { display:none !important; }
+     .mobile-reviews-label { display:block !important; }
+     #recent-reviews {
+       display:block !important;
+       flex-direction:column;
+       padding:8px 12px !important;
+       gap:0;
+     }
+     #recent-reviews .recent-review-card:not(:first-child) { display:none; }
+     #recent-reviews .recent-review-card {
+       display:flex; align-items:center; gap:8px;
+       padding:6px 8px; border-radius:4px;
+       background:#fff; border:1px solid #e0e0e0;
+     }
+     #recent-reviews .recent-review-card .rr-name { margin:0; font-size:12px; flex:1; }
+     #recent-reviews .recent-review-card .rr-stars { font-size:11px; margin:0; }
+     #recent-reviews .recent-review-card .rr-text { display:none; }
+     #recent-reviews .recent-review-card .rr-user { display:none; }
+   }
+
+
+   .pizza-marker-wrap {
+     width:38px; height:38px;
+     cursor:pointer;
+     pointer-events: auto !important;
+   }
+   .pizza-marker {
+     width:38px; height:38px;
+     background:#c0392b; border:3px solid #fff;
+     border-radius:50%; display:flex; align-items:center;
+     justify-content:center; font-size:18px;
+     box-shadow:0 2px 6px rgba(0,0,0,0.35);
+     cursor:pointer;
+     pointer-events: none;
+   }
+
+
+   .leaflet-popup-content-wrapper { border-radius:8px; padding:0; overflow:hidden; }
+   .leaflet-popup-content { margin:0; min-width:200px; }
+   .popup-inner { padding:14px 16px; font-family:Tahoma,sans-serif; }
+   .popup-inner h4 { margin:0 0 4px; font-size:14px; color:#222; }
+   .popup-inner .popup-addr { font-size:12px; color:#666; margin-bottom:4px; }
+   .popup-inner .popup-stars { color:#c0392b; font-size:14px; margin-bottom:4px; }
+   .popup-inner .popup-hours { font-size:11px; color:#888; margin-bottom:8px; }
+   .popup-inner .popup-tags span {
+     display:inline-block; background:#f0e6e6; color:#c0392b;
+     border-radius:10px; padding:2px 8px; font-size:11px; margin:2px 2px 6px 0;
+   }
+   .popup-btn {
+     display:block; background:#c0392b; color:#fff !important;
+     padding:7px 14px; border-radius:4px; font-size:12px;
+     text-decoration:none !important; text-align:center;
+     margin-top:4px; font-weight:bold;
+   }
+   .popup-btn:hover { background:#a93226; }
+
+
+   #mobile-search {
+     display:none; padding:10px 12px 6px;
+     background:#f1f1f1; border-bottom:1px solid #ddd; width:100%;
+   }
+   #mobile-search-status { font-size:11px; color:#888; margin-top:4px; min-height:16px; }
+   #search-status { font-size:11px; color:#888; margin-top:4px; min-height:16px; }
+
+
+   #search-area-btn {
+     position: absolute;
+     top: 12px;
+     left: 50%;
+     transform: translateX(-50%);
+     z-index: 1000;
+     background: #fff;
+     color: #c0392b;
+     border: 2px solid #c0392b;
+     border-radius: 20px;
+     padding: 6px 18px;
+     font-size: 13px;
+     font-weight: bold;
+     cursor: pointer;
+     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+     display: none;
+     white-space: nowrap;
+     font-family: Tahoma, sans-serif;
+   }
+   #search-area-btn:hover { background: #c0392b; color: #fff; }
+   #map-frame { position: relative; }
+
+
+   @media screen and (max-width:800px) {
+     #mobile-search { display:block; }
+     .col-sm-2 { display:none !important; }
+     .col-sm-8 { width:100% !important; }
+     .row.content { min-height:auto; }
+     #slices-count { display:none; }
+   }
+ </style>
 </head>
 <body>
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <!-- Navigation -->
-  <nav class="navbar navbar-inverse">
-    <div class="container-fluid" style="padding:0 10px;">
-      <div class="navbar-header">
-        <button id="nav-toggle" type="button" class="navbar-toggle collapsed" aria-expanded="false" data-toggle="collapse" data-target="#bs-navbar">
-          <span class="sr-only">Toggle navigation</span>
-          <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
-        </button>
-        <a class="navbar-brand" href="index.html">SliceFinder</a>
-      </div>
-      <div id="bs-navbar" class="collapse navbar-collapse">
-        <ul class="nav navbar-nav">
-          <li class="active"><a href="index.html">Restaurants</a></li>
-          <li><a href="frozen.html">Frozen Pizza</a></li>
-          <li><a href="news.html">Headlines</a></li>
-          <li><a href="profile.html">My Profile</a></li>
-        </ul>
-        <ul class="nav navbar-nav navbar-right">
-          <li><a href="profile.html" id="nav-auth-btn" style="color:#c0392b !important;font-weight:bold;">Login</a></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+ <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-  <!-- Mobile search -->
-  <div id="mobile-search">
-    <div style="display:flex; gap:6px; align-items:flex-start;">
-      <div style="flex:2;">
-        <input type="text" id="mobile-city-input" class="form-control input-sm"
-          placeholder="City or ZIP" autocomplete="off"
-          onkeydown="if(event.key==='Enter'){mobileSearch();event.preventDefault();}">
-      </div>
-      <div style="flex:1;">
-        <input type="text" id="mobile-state-input" class="form-control input-sm"
-          placeholder="State (opt.)" autocomplete="off" maxlength="2"
-          onkeydown="if(event.key==='Enter'){mobileSearch();event.preventDefault();}">
-      </div>
-      <div>
-        <button class="btn btn-danger btn-sm" onclick="mobileSearch()">Search</button>
-      </div>
-    </div>
-    <div id="mobile-search-status"></div>
-  </div>
 
-  <!-- Page Content -->
-  <div class="page-wrapper">
-    <div class="container-fluid" style="flex:1;display:flex;flex-direction:column;width:100%;">
-      <div class="row content">
+ <!-- Navigation -->
+ <nav class="navbar navbar-inverse">
+   <div class="container-fluid" style="padding:0 10px;">
+     <div class="navbar-header">
+       <button id="nav-toggle" type="button" class="navbar-toggle collapsed" aria-expanded="false" data-toggle="collapse" data-target="#bs-navbar">
+         <span class="sr-only">Toggle navigation</span>
+         <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+       </button>
+       <a class="navbar-brand" href="index.html">SliceFinder</a>
+     </div>
+     <div id="bs-navbar" class="collapse navbar-collapse">
+       <ul class="nav navbar-nav">
+         <li class="active"><a href="index.html">Restaurants</a></li>
+         <li><a href="frozen.html">Frozen Pizza</a></li>
+         <li><a href="news.html">Headlines</a></li>
+         <li><a href="profile.html">My Profile</a></li>
+       </ul>
+       <ul class="nav navbar-nav navbar-right">
+         <li><a href="profile.html" id="nav-auth-btn" style="color:#c0392b !important;font-weight:bold;">Login</a></li>
+       </ul>
+     </div>
+   </div>
+ </nav>
 
-        <!-- Left Sidebar -->
-        <div class="col-sm-2 sidenav">
-          <p>
-            <a href="https://twitter.com/slicefinder" class="twitter-follow-button"
-               data-show-count="false" data-lang="en">Follow @slicefinder</a>
-          </p>
-          <h5 style="padding-top:20px"><strong>Most Reviewed</strong></h5>
-          <ul class="list-unstyled" id="most-reviewed-list" style="font-size:13px;">
-            <li style="color:#aaa; font-style:italic;">Loading…</li>
-          </ul>
-          <h5 style="padding-top:20px;"><strong>Top Reviewers</strong></h5>
-          <ul class="list-unstyled" id="top-reviewers-list" style="font-size:13px;">
-            <li style="color:#aaa; font-style:italic;">Loading…</li>
-          </ul>
 
-          <div align="center" style="position:absolute;bottom:50px;">
-            <a href="https://gregdodge.github.io/sf/images/dj-gato.gif" style="border:none;"><img src="https://gregdodge.github.io/sf/images/squirrel.jpg" style="width:80%"/></a>
-          </div>
-          
-        </div>
+ <!-- Mobile search -->
+ <div id="mobile-search">
+   <div style="display:flex; gap:6px; align-items:flex-start;">
+     <div style="flex:2;">
+       <input type="text" id="mobile-city-input" class="form-control input-sm"
+         placeholder="City or ZIP" autocomplete="off"
+         onkeydown="if(event.key==='Enter'){mobileSearch();event.preventDefault();}">
+     </div>
+     <div style="flex:1;">
+       <input type="text" id="mobile-state-input" class="form-control input-sm"
+         placeholder="State (opt.)" autocomplete="off" maxlength="2"
+         onkeydown="if(event.key==='Enter'){mobileSearch();event.preventDefault();}">
+     </div>
+     <div>
+       <button class="btn btn-danger btn-sm" onclick="mobileSearch()">Search</button>
+     </div>
+   </div>
+   <div id="mobile-search-status"></div>
+ </div>
 
-        <!-- Main Content -->
-        <div class="col-sm-8" style="display:flex;flex-direction:column;flex:1;">
-          <div id="slices-header">
-            <span id="slices-headline">
-              <a href="https://gregdodge.github.io/sf/images/sohungrysoscared.gif" style="text-decoration: none !important;"><span style="display: inline-block;">🍕</span></a> Find and rate the best pizza</span>
-            <span id="slices-count">Loading…</span>
-          </div>
-          <div id="geo-status">Detecting your location…</div>
-          <div id="map-frame">
-            <button id="search-area-btn" onclick="searchThisArea()">🔍 Search this area</button>
-          </div>
-          <div id="slices-header" style="font-size:14px; display:block;" class="recent-reviews-label">Recent local user reviews:</div>
-          <div style="font-size:13px; color:#888; padding:4px 12px 0; display:none;font-weight:bold;letter-spacing:0.5px;" class="mobile-reviews-label">📍 Recent nearby review:</div>
-          <div id="recent-reviews" style="padding:20px;">
-            <div class="recent-review-card" style="color:#aaa;font-style:italic;">Loading recent reviews…</div>
-          </div>
-        </div>
 
-        <!-- Right Sidebar -->
-        <div class="col-sm-2 sidenav">
-          <h5><strong>Find your slice</strong></h5>
-          <form onsubmit="desktopSearch(event)">
-            <div class="form-group" style="margin-bottom:6px;">
-              <input type="text" id="location-input" class="form-control input-sm"
-                placeholder="City or ZIP" autocomplete="off">
-            </div>
-            <div class="form-group" style="margin-bottom:6px;">
-              <input type="text" id="state-input" class="form-control input-sm"
-                placeholder="State (optional)" autocomplete="off" maxlength="2">
-            </div>
-            <button type="submit" class="btn btn-danger btn-sm btn-block">Search Location</button>
-            <div id="search-status"></div>
-          </form>
-          <div class="form-group" style="margin-top:10px; margin-bottom:0;">
-            <input type="text" id="name-search-input" class="form-control input-sm"
-              placeholder="Filter by restaurant name…" autocomplete="off"
-              oninput="filterMarkersByName(this.value)">
-          </div>
-          <hr>
-          <h5><strong>Add a Pizza Place</strong></h5>
-          <p style="font-size:12px;">Know a great spot that's missing? Help the community!</p>
-          <a href="add-restaurant.html" class="btn btn-default btn-sm btn-block">+ Add Restaurant</a>
-          <hr>
-          <h5><strong>Questions or Suggestions?</strong></h5>
-          <p style="font-size:12px; color:#666;">We'd love to hear from you!</p>
-          <div>
-            <input type="text" id="contact-name" class="form-control input-sm" placeholder="Your name (optional)" style="margin-bottom:6px;">
-            <input type="email" id="contact-email" class="form-control input-sm" placeholder="Email (optional)" style="margin-bottom:6px;">
-            <textarea id="contact-message" class="form-control input-sm" rows="3" placeholder="Your message…" style="margin-bottom:6px;"></textarea>
-            <button class="btn btn-danger btn-sm btn-block" onclick="submitContact()">Send</button>
-            <div id="contact-status" style="font-size:12px; margin-top:6px; min-height:16px;"></div>
-          </div>
+ <!-- Page Content -->
+ <div class="page-wrapper">
+   <div class="container-fluid" style="flex:1;display:flex;flex-direction:column;width:100%;">
+     <div class="row content">
 
-          <div align="center" style="position:absolute;bottom:50px;">
-            <a href="https://gregdodge.github.io/sf/images/ny-style.gif" style="border:none;"><img src="https://gregdodge.github.io/sf/images/mine.jpg" style="width:80%"/></a>
-          </div>
-          
-        </div>
+
+       <!-- Left Sidebar -->
+       <div class="col-sm-2 sidenav">
+         <p>
+           <a href="https://twitter.com/slicefinder" class="twitter-follow-button"
+              data-show-count="false" data-lang="en">Follow @slicefinder</a>
+         </p>
+         <h5 style="padding-top:20px"><strong>Most Reviewed</strong></h5>
+         <ul class="list-unstyled" id="most-reviewed-list" style="font-size:13px;">
+           <li style="color:#aaa; font-style:italic;">Loading…</li>
+         </ul>
+         <h5 style="padding-top:20px;"><strong>Top Reviewers</strong></h5>
+         <ul class="list-unstyled" id="top-reviewers-list" style="font-size:13px;">
+           <li style="color:#aaa; font-style:italic;">Loading…</li>
+         </ul>
+
+
+         <div align="center" style="position:absolute;bottom:50px;">
+           <a href="https://gregdodge.github.io/sf/images/dj-gato.gif" style="border:none;"><img src="https://gregdodge.github.io/sf/images/squirrel.jpg" style="width:80%"/></a>
+         </div>
         
-      </div>
-    </div>
-  </div>
+       </div>
 
-  <footer><p>SliceFinder &copy;2026</p></footer>
 
-  <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+       <!-- Main Content -->
+       <div class="col-sm-8" style="display:flex;flex-direction:column;flex:1;">
+         <div id="slices-header">
+           <span id="slices-headline">
+             <a href="https://gregdodge.github.io/sf/images/sohungrysoscared.gif" style="text-decoration: none !important;" title="STRESSED"><span style="display: inline-block;">🍕</span></a> Find and rate the best pizza</span>
+           <span id="slices-count">Loading…</span>
+         </div>
+         <div id="geo-status">Detecting your location…</div>
+         <div id="map-frame">
+           <button id="search-area-btn" onclick="searchThisArea()">🔍 Search this area</button>
+         </div>
+         <div id="slices-header" style="font-size:14px; display:block;" class="recent-reviews-label">Recent local user reviews:</div>
+         <div style="font-size:13px; color:#888; padding:4px 12px 0; display:none;font-weight:bold;letter-spacing:0.5px;" class="mobile-reviews-label">📍 Recent nearby review:</div>
+         <div id="recent-reviews" style="padding:20px;">
+           <div class="recent-review-card" style="color:#aaa;font-style:italic;">Loading recent reviews…</div>
+         </div>
+       </div>
 
-  <!-- ── Leaflet map init ─────────────────────────────────────────── -->
-  <script>
-    var map = L.map('map-frame', {
-      center: [37.7749, -122.4194],
-      zoom: 13,
-      zoomControl: true,
-    });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19,
-    }).addTo(map);
+       <!-- Right Sidebar -->
+       <div class="col-sm-2 sidenav">
+         <h5 style="font-size:16px;"><strong>Find your slice!</strong></h5>
+         <form onsubmit="desktopSearch(event)">
+           <div class="form-group" style="margin-bottom:6px;">
+             <input type="text" id="location-input" class="form-control input-sm"
+               placeholder="City or ZIP" autocomplete="off">
+           </div>
+           <div class="form-group" style="margin-bottom:6px;">
+             <input type="text" id="state-input" class="form-control input-sm"
+               placeholder="State (optional)" autocomplete="off" maxlength="2">
+           </div>
+           <button type="submit" class="btn btn-danger btn-sm btn-block">Search Location</button>
+           <div id="search-status"></div>
+         </form>
+         <div class="form-group" style="margin-top:10px; margin-bottom:0;">
+           <input type="text" id="name-search-input" class="form-control input-sm"
+             placeholder="Filter by restaurant name…" autocomplete="off"
+             oninput="filterMarkersByName(this.value)">
+         </div>
+        
+         <hr>
+        
+         <h5 style="padding-top:10px;"><strong>Something missing?</strong></h5>
+         <!-- <p style="font-size:12px;">Add a 🍕 spot</p> --> <!-- class="btn btn-default btn-sm btn-block" -->
+         <a href="add-restaurant.html" class="btn btn-danger btn-sm btn-block"><!--+ Add Restaurant-->Add a 🍕 Spot</a>
 
-    function setGeoStatus(msg) {
-      document.getElementById('geo-status').textContent = msg;
-    }
 
-    function setSlicesCount(msg) {
-      document.getElementById('slices-count').textContent = msg;
-    }
+         <hr>
 
-    // Geolocation
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(pos) {
-          map.setView([pos.coords.latitude, pos.coords.longitude], 13);
-          setGeoStatus('Showing pizza near you … Not right? Try search.');
-        },
-        function() { setGeoStatus('Showing pizza near you … Not right? Try search.'); },
-        { timeout: 8000, maximumAge: 60000 }
-      );
-    } else {
-      setGeoStatus('Showing pizza near you … Not right? Try search.');
-    }
 
-    // Pizza marker icon
-    function makePizzaIcon(highlight) {
-      return L.divIcon({
-        className: 'pizza-marker-wrap',
-        html: '<div class="pizza-marker" style="' + (highlight ? 'background:#922b21;transform:scale(1.15);' : '') + '">🍕</div>',
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-        popupAnchor: [0, -22],
-      });
-    }
+         <h6 style="padding-top:10px;color:#737270;"><strong>Suggestions? Deep thoughts?</strong></h6>
+         <!--<p style="font-size:12px; color:#666;">Please share!</p>-->
+         <div>
+           <input type="text" id="contact-name" class="form-control input-sm" placeholder="Your name (optional)" style="margin-bottom:6px;display:none !important;">
+           <textarea id="contact-message" class="form-control input-sm" rows="1" placeholder="Send us whatever!" style="margin-bottom:6px;"></textarea>
+           <input type="email" id="contact-email" class="form-control input-sm" placeholder="Email (optional)" style="margin-bottom:6px;display:none !important;">
+           <button class="btn btn-default btn-sm btn-block" onclick="submitContact()">Hit us up</button>
+           <div id="contact-status" style="font-size:12px; margin-top:6px; min-height:16px;"></div>
+         </div>
 
-    // Geocode an address and place a marker
-    function geocodeAndAddMarker(docId, r) {
-      var address = [r.address, r.city, r.state, r.zip].filter(Boolean).join(', ');
-      var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address);
-      fetch(url)
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data && data.length > 0) {
-            r.lat = +data[0].lat;
-            r.lng = +data[0].lon;
-            addMarker(docId, r);
-          } else {
-            console.warn('Could not geocode:', r.name);
-          }
-        })
-        .catch(function(e) { console.warn('Geocode failed:', r.name, e); });
-    }
 
-    window.allMarkers = [];
 
-    function addMarker(docId, r) {
-      if (!r.lat || !r.lng) return;
 
-      var marker = L.marker([r.lat, r.lng], { icon: makePizzaIcon(false) }).addTo(map);
-      marker._restaurantName = (r.name || '').toLowerCase();
+         <div align="center" style="position:absolute;bottom:50px;">
+           <a href="https://gregdodge.github.io/sf/images/ny-style.gif" style="border:none;"><img src="https://gregdodge.github.io/sf/images/mine.jpg" style="width:80%"/></a>
+         </div>
+        
+       </div>
+      
+     </div>
+   </div>
+ </div>
 
-      var tagsHtml = (r.tags || []).map(function(t) {
-        return '<span>' + t + '</span>';
-      }).join('');
 
-      var starsHtml = '';
-      if (r.avgRating) {
-        var full  = Math.round(r.avgRating);
-        var stars = '★'.repeat(full) + '☆'.repeat(5 - full);
-        starsHtml = '<div class="popup-stars">' + stars + ' <span style="font-size:11px;color:#888;">(' + r.avgRating.toFixed(1) + ')</span></div>';
-      }
+ <footer><p>SliceFinder &copy;2026</p></footer>
 
-      var popupHtml =
-        '<div class="popup-inner">' +
-        '<h4><strong>' + r.name + '</strong></h4>' +
-        starsHtml +
-        '<div class="popup-addr">📍 ' + (r.address || '') + ', ' + (r.city || '') + '</div>' +
-        (r.hours ? '<div class="popup-hours">⏰ ' + r.hours + '</div>' : '') +
-        (tagsHtml ? '<div class="popup-tags">' + tagsHtml + '</div>' : '') +
-        '<a href="restaurant.html?id=' + docId + '" class="popup-btn">View Restaurant →</a>' +
-        '</div>';
 
-      marker.bindPopup(popupHtml, { maxWidth: 240 });
-      marker.on('mouseover',  function() { this.setIcon(makePizzaIcon(true)); });
-      marker.on('mouseout',   function() { this.setIcon(makePizzaIcon(false)); });
-      marker.on('click',      function() { this.openPopup(); });
-      marker.on('touchend',   function(e) { L.DomEvent.stopPropagation(e); this.openPopup(); });
-      window.allMarkers.push(marker);
-      return marker;
-    }
+ <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
-    function geocodeAndPan(query, statusEl, label) {
-      var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query);
-      statusEl.textContent = 'Searching…';
-      fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (data && data.length > 0) {
-            var lat = +data[0].lat;
-            var lon = +data[0].lon;
-            map.setView([lat, lon], 13);
-            setGeoStatus(label);
-            statusEl.textContent = '';
-            if (window.loadRestaurantsNear) window.loadRestaurantsNear(lat, lon);
-          } else {
-            statusEl.textContent = 'Location not found. Try a different search.';
-          }
-        })
-        .catch(function() { statusEl.textContent = 'Search failed. Try again.'; });
-    }
 
-    function desktopSearch(e) {
-      e.preventDefault();
-      var city  = document.getElementById('location-input').value.trim();
-      var state = document.getElementById('state-input').value.trim();
-      var statusEl = document.getElementById('search-status');
-      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
-      statusEl.textContent = '';
-      geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
-    }
+ <!-- ── Leaflet map init ─────────────────────────────────────────── -->
+ <script>
+   var map = L.map('map-frame', {
+     center: [37.7749, -122.4194],
+     zoom: 13,
+     zoomControl: true,
+   });
 
-    function mobileSearch() {
-      var city  = document.getElementById('mobile-city-input').value.trim();
-      var state = document.getElementById('mobile-state-input').value.trim();
-      var statusEl = document.getElementById('mobile-search-status');
-      if (!city) { statusEl.textContent = 'Please enter a city or ZIP.'; return; }
-      statusEl.textContent = '';
-      geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
-    }
 
-    // ── Search this area button ──────────────────────────────────────
-    var _initialLoad = true;
-    map.on('moveend', function() {
-      if (_initialLoad) { _initialLoad = false; return; }
-      document.getElementById('search-area-btn').style.display = 'block';
-    });
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+     maxZoom: 19,
+   }).addTo(map);
 
-    window.searchThisArea = function() {
-      var center = map.getCenter();
-      document.getElementById('search-area-btn').style.display = 'none';
-      setGeoStatus('Showing pizza near this area…');
-      if (window.loadRestaurantsNear) window.loadRestaurantsNear(center.lat, center.lng);
-    };
 
-    // Hamburger handled by Bootstrap collapse via data-toggle/data-target
-  </script>
+   function setGeoStatus(msg) {
+     document.getElementById('geo-status').textContent = msg;
+   }
 
-  <!-- ── Firebase: load restaurants near a location ──────────────── -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
-    import { getFirestore, collection, getDocs, getDoc, doc, query, where, orderBy, limit, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyB-5Bz4rpHehUbxX7kP__-ap0xSuSdwZ0E",
-      authDomain: "slicefinder-afd7f.firebaseapp.com",
-      projectId: "slicefinder-afd7f",
-      storageBucket: "slicefinder-afd7f.firebasestorage.app",
-      messagingSenderId: "103165329059",
-      appId: "1:103165329059:web:721f516c20d701ebe98916"
-    };
+   function setSlicesCount(msg) {
+     document.getElementById('slices-count').textContent = msg;
+   }
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
 
-    sessionStorage.setItem('sf-firebase-config', JSON.stringify(firebaseConfig));
+   // Geolocation
+   if (navigator.geolocation) {
+     navigator.geolocation.getCurrentPosition(
+       function(pos) {
+         map.setView([pos.coords.latitude, pos.coords.longitude], 13);
+         setGeoStatus('Showing pizza near you … Not right? Try search.');
+       },
+       function() { setGeoStatus('Showing pizza near you … Not right? Try search.'); },
+       { timeout: 8000, maximumAge: 60000 }
+     );
+   } else {
+     setGeoStatus('Showing pizza near you … Not right? Try search.');
+   }
 
-    async function loadMostReviewed() {
-      const el = document.getElementById('most-reviewed-list');
-      if (!el) return;
-      try {
-        const snap = await getDoc(doc(db, 'stats', 'most_reviewed'));
-        if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        const restaurants = snap.data().restaurants || [];
-        if (restaurants.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        el.innerHTML = restaurants.map(({ id, name, reviewCount }) =>
-          `<li style="margin-bottom:4px;"><a href="restaurant.html?id=${id}" style="color:#c0392b;">${name}</a>` +
-          (reviewCount ? ` <span class="badge" style="background:#c0392b;">${reviewCount}</span>` : '') +
-          '</li>'
-        ).join('');
-      } catch(e) {
-        el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
-        console.warn('Most reviewed error:', e);
-      }
-    }
 
-    async function loadTopReviewers() {
-      const el = document.getElementById('top-reviewers-list');
-      if (!el) return;
-      try {
-        const snap = await getDoc(doc(db, 'stats', 'top_reviewers'));
-        if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        const reviewers = snap.data().reviewers || [];
-        if (reviewers.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
-        el.innerHTML = reviewers.map(({ name, uid, count }) => {
-          const nameHtml = uid
-            ? `<a href="profile.html?user=${uid}" style="color:#c0392b;">${name}</a>`
-            : `<span>${name}</span>`;
-          return `<li style="margin-bottom:4px;">${nameHtml} &nbsp;<span class="badge" style="background:#555;">${count}</span></li>`;
-        }).join('');
-      } catch(e) {
-        el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
-        console.warn('Top reviewers error:', e);
-      }
-    }
+   // Pizza marker icon
+   function makePizzaIcon(highlight) {
+     return L.divIcon({
+       className: 'pizza-marker-wrap',
+       html: '<div class="pizza-marker" style="' + (highlight ? 'background:#922b21;transform:scale(1.15);' : '') + '">🍕</div>',
+       iconSize: [38, 38],
+       iconAnchor: [19, 19],
+       popupAnchor: [0, -22],
+     });
+   }
 
-    // ── Build a review card HTML string ─────────────────────────────
-    function buildReviewCard(rv, restName, restId) {
-      const stars = rv.rating ? '★'.repeat(Math.round(rv.rating)) + '☆'.repeat(5 - Math.round(rv.rating)) : '';
-      const text  = (rv.text || '').trim();
-      const user  = rv.username || rv.uid || 'Anonymous';
-      const link  = restId ? `restaurant.html?id=${restId}` : '#';
-      return `<div class="recent-review-card">` +
-        `<div class="rr-name"><a href="${link}">${restName || 'Unknown Restaurant'}</a></div>` +
-        (stars ? `<div class="rr-stars">${stars}</div>` : '') +
-        (text   ? `<div class="rr-text">${text}</div>` : '') +
-        `<div class="rr-user">— ${user}</div>` +
-        `</div>`;
-    }
 
-    // ── Contextual recent reviews ─────────────────────────────────────
-    window.loadRecentReviews = async function(areaRestaurants) {
-      const container = document.getElementById('recent-reviews');
-      if (!container) return;
+   // Geocode an address and place a marker
+   function geocodeAndAddMarker(docId, r) {
+     var address = [r.address, r.city, r.state, r.zip].filter(Boolean).join(', ');
+     var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(address);
+     fetch(url)
+       .then(function(res) { return res.json(); })
+       .then(function(data) {
+         if (data && data.length > 0) {
+           r.lat = +data[0].lat;
+           r.lng = +data[0].lon;
+           addMarker(docId, r);
+         } else {
+           console.warn('Could not geocode:', r.name);
+         }
+       })
+       .catch(function(e) { console.warn('Geocode failed:', r.name, e); });
+   }
 
-      const areaMap = {};
-      (areaRestaurants || []).forEach(r => { areaMap[r.id] = r.data.name || ''; });
-      const areaIds = Object.keys(areaMap);
 
-      // ── Scenario 1: reviews for area restaurants ──────────────────
-      if (areaIds.length > 0) {
-        try {
-          const topIds = (areaRestaurants || [])
-            .filter(r => r.data.reviewCount > 0)
-            .sort((a, b) => (b.data.reviewCount || 0) - (a.data.reviewCount || 0))
-            .slice(0, 15)
-            .map(r => r.id);
+   window.allMarkers = [];
 
-          if (topIds.length > 0) {
-            const q = query(
-              collection(db, 'reviews'),
-              where('restaurantId', 'in', topIds),
-              orderBy('createdAt', 'desc'),
-              limit(3)
-            );
-            const snap = await getDocs(q);
-            if (!snap.empty) {
-              const cards = snap.docs.map(d => {
-                const rv = d.data();
-                return buildReviewCard(rv, areaMap[rv.restaurantId] || '', rv.restaurantId);
-              });
-              if (cards.length < 3) {
-                const reviewedIds = new Set(snap.docs.map(d => d.data().restaurantId));
-                const topUp = (areaRestaurants || [])
-                  .filter(r => !reviewedIds.has(r.id) && r.data.createdAt)
-                  .sort((a, b) => {
-                    const ta = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
-                    const tb = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
-                    return tb - ta;
-                  })
-                  .slice(0, 3 - cards.length)
-                  .map(r =>
-                    `<div class="recent-review-card">` +
-                    `<div class="rr-name"><a href="restaurant.html?id=${r.id}">${r.data.name || ''}</a></div>` +
-                    `<div class="rr-text" style="color:#aaa; font-style:italic;">Recently added — be the first to review!</div>` +
-                    `</div>`
-                  );
-                container.innerHTML = [...cards, ...topUp].join('');
-              } else {
-                container.innerHTML = cards.join('');
-              }
-              return;
-            }
-          }
-        } catch(e) {
-          console.warn('Area reviews query failed:', e.message);
-        }
-      }
 
-      // ── Scenario 2: no area reviews — show 3 most recently added listings ──
-      if (areaIds.length > 0) {
-        const recent = (areaRestaurants || [])
-          .filter(r => r.data.createdAt)
-          .sort((a, b) => {
-            const ta = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
-            const tb = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
-            return tb - ta;
-          })
-          .slice(0, 3);
+   function addMarker(docId, r) {
+     if (!r.lat || !r.lng) return;
 
-        if (recent.length > 0) {
-          container.innerHTML = recent.map(r =>
-            `<div class="recent-review-card">` +
-            `<div class="rr-name"><a href="restaurant.html?id=${r.id}">${r.data.name || ''}</a></div>` +
-            `<div class="rr-text" style="color:#aaa; font-style:italic;">Recently added — be the first to review!</div>` +
-            `</div>`
-          ).join('');
-          return;
-        }
-      }
 
-      // ── Scenario 3: no listings in area ──
-      container.innerHTML =
-        `<div class="recent-review-card" style="color:#aaa; font-style:italic;">
-          No pizza spots here yet — <a href="add-restaurant.html" style="color:#c0392b; font-weight:bold;">add one!</a>
-        </div>`;
-    };
+     var marker = L.marker([r.lat, r.lng], { icon: makePizzaIcon(false) }).addTo(map);
+     marker._restaurantName = (r.name || '').toLowerCase();
 
-    window.loadRecentReviews([]);
-    loadMostReviewed();
-    loadTopReviewers();
 
-    const RADIUS = 0.10;
-    const CACHE_KEY = 'sf-restaurants-cache';
-    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+     var tagsHtml = (r.tags || []).map(function(t) {
+       return '<span>' + t + '</span>';
+     }).join('');
 
-    function getCachedRestaurants(lat, lng) {
-      try {
-        const raw = sessionStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        const { ts, clat, clng, restaurants } = JSON.parse(raw);
-        if (Date.now() - ts > CACHE_TTL) return null;
-        if (Math.abs(clat - lat) > RADIUS || Math.abs(clng - lng) > RADIUS) return null;
-        return restaurants;
-      } catch(e) { return null; }
-    }
 
-    function setCachedRestaurants(lat, lng, restaurants) {
-      try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), clat: lat, clng: lng, restaurants }));
-      } catch(e) {}
-    }
+     var starsHtml = '';
+     if (r.avgRating) {
+       var full  = Math.round(r.avgRating);
+       var stars = '★'.repeat(full) + '☆'.repeat(5 - full);
+       starsHtml = '<div class="popup-stars">' + stars + ' <span style="font-size:11px;color:#888;">(' + r.avgRating.toFixed(1) + ')</span></div>';
+     }
 
-    function renderRestaurants(restaurants) {
-      document.getElementById('search-area-btn').style.display = 'none';
-      window.allMarkers.forEach(function(m) { map.removeLayer(m); });
-      window.allMarkers = [];
-      let count = 0;
-      restaurants.forEach(function(item) { addMarker(item.id, item.data); count++; });
-      const countLabel = count >= 100 ? '100+ slices found in your area!' : count + ' slice' + (count !== 1 ? 's' : '') + ' found in your area!';
-      setSlicesCount(countLabel);
-      var nameInput = document.getElementById('name-search-input');
-      if (nameInput && nameInput.value.trim()) window.filterMarkersByName(nameInput.value);
-      if (window.loadRecentReviews) window.loadRecentReviews(restaurants);
-    }
 
-    window.loadRestaurantsNear = async function(lat, lng) {
-      setSlicesCount('Searching…');
-      const cached = getCachedRestaurants(lat, lng);
-      if (cached) { renderRestaurants(cached); return; }
-      try {
-        const q = query(
-          collection(db, 'restaurants'),
-          where('lat', '>=', lat - RADIUS),
-          where('lat', '<=', lat + RADIUS),
-          limit(300)
-        );
-        const snapshot = await getDocs(q);
-        const restaurants = [];
-        snapshot.forEach(function(docSnap) {
-          const r = docSnap.data();
-          if (r.lat && r.lng && r.lng >= lng - RADIUS && r.lng <= lng + RADIUS) {
-            restaurants.push({ id: docSnap.id, data: r });
-          }
-        });
-        restaurants.sort((a, b) => (b.data.avgRating || 0) - (a.data.avgRating || 0));
-        const capped = restaurants.slice(0, 200);
-        setCachedRestaurants(lat, lng, capped);
-        renderRestaurants(capped);
-      } catch(e) {
-        setSlicesCount('Could not load restaurants');
-        console.error('Firestore error:', e);
-      }
-    };
+     var popupHtml =
+       '<div class="popup-inner">' +
+       '<h4><strong>' + r.name + '</strong></h4>' +
+       starsHtml +
+       '<div class="popup-addr">📍 ' + (r.address || '') + ', ' + (r.city || '') + '</div>' +
+       (r.hours ? '<div class="popup-hours">⏰ ' + r.hours + '</div>' : '') +
+       (tagsHtml ? '<div class="popup-tags">' + tagsHtml + '</div>' : '') +
+       '<a href="restaurant.html?id=' + docId + '" class="popup-btn">View Restaurant →</a>' +
+       '</div>';
 
-    // ── Contact form ──────────────────────────────────────────────────
-    window.submitContact = async function() {
-      const statusEl = document.getElementById('contact-status');
-      const message  = document.getElementById('contact-message').value.trim();
-      if (!message) { statusEl.textContent = '❌ Please enter a message.'; statusEl.style.color = 'red'; return; }
-      statusEl.textContent = 'Sending…'; statusEl.style.color = '#888';
-      try {
-        await addDoc(collection(db, 'contact'), {
-          name:      document.getElementById('contact-name').value.trim()  || null,
-          email:     document.getElementById('contact-email').value.trim() || null,
-          message,
-          createdAt: serverTimestamp(),
-        });
-        statusEl.textContent = '✅ Thanks! We\'ll be in touch.';
-        statusEl.style.color = 'green';
-        document.getElementById('contact-name').value    = '';
-        document.getElementById('contact-email').value   = '';
-        document.getElementById('contact-message').value = '';
-      } catch(e) {
-        statusEl.textContent = '❌ Could not send. Try again.';
-        statusEl.style.color = 'red';
-      }
-    };
 
-    window.filterMarkersByName = function(query) {
-      var q = query.toLowerCase().trim();
-      var matchedMarkers = [];
-      window.allMarkers.forEach(function(m) {
-        if (!q || m._restaurantName.indexOf(q) !== -1) {
-          if (!map.hasLayer(m)) map.addLayer(m);
-          matchedMarkers.push(m);
-        } else {
-          if (map.hasLayer(m)) map.removeLayer(m);
-        }
-      });
-      var total = window.allMarkers.length;
-      if (q && matchedMarkers.length > 0) {
-        map.fitBounds(L.featureGroup(matchedMarkers).getBounds().pad(0.3));
-        setSlicesCount(matchedMarkers.length + ' match' + (matchedMarkers.length !== 1 ? 'es' : '') + ' for "' + query + '"');
-      } else if (q && matchedMarkers.length === 0) {
-        setSlicesCount('No matches for "' + query + '"');
-      } else {
-        setSlicesCount(total + ' slice' + (total !== 1 ? 's' : '') + ' found in your area!');
-      }
-    };
+     marker.bindPopup(popupHtml, { maxWidth: 240 });
+     marker.on('mouseover',  function() { this.setIcon(makePizzaIcon(true)); });
+     marker.on('mouseout',   function() { this.setIcon(makePizzaIcon(false)); });
+     marker.on('click',      function() { this.openPopup(); });
+     marker.on('touchend',   function(e) { L.DomEvent.stopPropagation(e); this.openPopup(); });
+     window.allMarkers.push(marker);
+     return marker;
+   }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        function(pos) { window.loadRestaurantsNear(pos.coords.latitude, pos.coords.longitude); },
-        function()    { window.loadRestaurantsNear(37.7749, -122.4194); },
-        { timeout: 8000, maximumAge: 60000 }
-      );
-    } else {
-      window.loadRestaurantsNear(37.7749, -122.4194);
-    }
 
-    const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js');
-    const auth = getAuth(app);
-    onAuthStateChanged(auth, (user) => {
-      const btn = document.getElementById('nav-auth-btn');
-      if (!btn) return;
-      btn.textContent = user ? (user.displayName || 'My Profile') : 'Login';
-      btn.href = 'profile.html';
-    });
-  </script>
+   function geocodeAndPan(query, statusEl, label) {
+     var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query);
+     statusEl.textContent = 'Searching…';
+     fetch(url)
+       .then(function(r) { return r.json(); })
+       .then(function(data) {
+         if (data && data.length > 0) {
+           var lat = +data[0].lat;
+           var lon = +data[0].lon;
+           map.setView([lat, lon], 13);
+           setGeoStatus(label);
+           statusEl.textContent = '';
+           if (window.loadRestaurantsNear) window.loadRestaurantsNear(lat, lon);
+         } else {
+           statusEl.textContent = 'Location not found. Try a different search.';
+         }
+       })
+       .catch(function() { statusEl.textContent = 'Search failed. Try again.'; });
+   }
+
+
+   function desktopSearch(e) {
+     e.preventDefault();
+     var city  = document.getElementById('location-input').value.trim();
+     var state = document.getElementById('state-input').value.trim();
+     var statusEl = document.getElementById('search-status');
+     if (!city) { statusEl.textContent = 'Squirrel needs a city or ZIP'; return; }
+     statusEl.textContent = '';
+     geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
+   }
+
+
+   function mobileSearch() {
+     var city  = document.getElementById('mobile-city-input').value.trim();
+     var state = document.getElementById('mobile-state-input').value.trim();
+     var statusEl = document.getElementById('mobile-search-status');
+     if (!city) { statusEl.textContent = 'Please to enter a city or ZIP'; return; }
+     statusEl.textContent = '';
+     geocodeAndPan(city + (state ? ', ' + state : '') + ', USA', statusEl, 'Showing pizza near ' + city);
+   }
+
+
+   // ── Search this area button ──────────────────────────────────────
+   var _initialLoad = true;
+   map.on('moveend', function() {
+     if (_initialLoad) { _initialLoad = false; return; }
+     document.getElementById('search-area-btn').style.display = 'block';
+   });
+
+
+   window.searchThisArea = function() {
+     var center = map.getCenter();
+     document.getElementById('search-area-btn').style.display = 'none';
+     setGeoStatus('Showing pizza near this area…');
+     if (window.loadRestaurantsNear) window.loadRestaurantsNear(center.lat, center.lng);
+   };
+
+
+   // Hamburger handled by Bootstrap collapse via data-toggle/data-target
+ </script>
+
+
+ <!-- ── Firebase: load restaurants near a location ──────────────── -->
+ <script type="module">
+   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
+   import { getFirestore, collection, getDocs, getDoc, doc, query, where, orderBy, limit, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
+
+
+   const firebaseConfig = {
+     apiKey: "AIzaSyB-5Bz4rpHehUbxX7kP__-ap0xSuSdwZ0E",
+     authDomain: "slicefinder-afd7f.firebaseapp.com",
+     projectId: "slicefinder-afd7f",
+     storageBucket: "slicefinder-afd7f.firebasestorage.app",
+     messagingSenderId: "103165329059",
+     appId: "1:103165329059:web:721f516c20d701ebe98916"
+   };
+
+
+   const app = initializeApp(firebaseConfig);
+   const db  = getFirestore(app);
+
+
+   sessionStorage.setItem('sf-firebase-config', JSON.stringify(firebaseConfig));
+
+
+   async function loadMostReviewed() {
+     const el = document.getElementById('most-reviewed-list');
+     if (!el) return;
+     try {
+       const snap = await getDoc(doc(db, 'stats', 'most_reviewed'));
+       if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+       const restaurants = snap.data().restaurants || [];
+       if (restaurants.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+       el.innerHTML = restaurants.map(({ id, name, reviewCount }) =>
+         `<li style="margin-bottom:4px;"><a href="restaurant.html?id=${id}" style="color:#c0392b;">${name}</a>` +
+         (reviewCount ? ` <span class="badge" style="background:#c0392b;">${reviewCount}</span>` : '') +
+         '</li>'
+       ).join('');
+     } catch(e) {
+       el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
+       console.warn('Most reviewed error:', e);
+     }
+   }
+
+
+   async function loadTopReviewers() {
+     const el = document.getElementById('top-reviewers-list');
+     if (!el) return;
+     try {
+       const snap = await getDoc(doc(db, 'stats', 'top_reviewers'));
+       if (!snap.exists()) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+       const reviewers = snap.data().reviewers || [];
+       if (reviewers.length === 0) { el.innerHTML = '<li style="color:#aaa;">No data yet</li>'; return; }
+       el.innerHTML = reviewers.map(({ name, uid, count }) => {
+         const nameHtml = uid
+           ? `<a href="profile.html?user=${uid}" style="color:#c0392b;">${name}</a>`
+           : `<span>${name}</span>`;
+         return `<li style="margin-bottom:4px;">${nameHtml} &nbsp;<span class="badge" style="background:#555;">${count}</span></li>`;
+       }).join('');
+     } catch(e) {
+       el.innerHTML = '<li style="color:#aaa;">Could not load</li>';
+       console.warn('Top reviewers error:', e);
+     }
+   }
+
+
+   // ── Build a review card HTML string ─────────────────────────────
+   function buildReviewCard(rv, restName, restId) {
+     const stars = rv.rating ? '★'.repeat(Math.round(rv.rating)) + '☆'.repeat(5 - Math.round(rv.rating)) : '';
+     const text  = (rv.text || '').trim();
+     const user  = rv.username || rv.uid || 'Anonymous';
+     const link  = restId ? `restaurant.html?id=${restId}` : '#';
+     return `<div class="recent-review-card">` +
+       `<div class="rr-name"><a href="${link}">${restName || 'Unknown Restaurant'}</a></div>` +
+       (stars ? `<div class="rr-stars">${stars}</div>` : '') +
+       (text   ? `<div class="rr-text">${text}</div>` : '') +
+       `<div class="rr-user">— ${user}</div>` +
+       `</div>`;
+   }
+
+
+   // ── Contextual recent reviews ─────────────────────────────────────
+   window.loadRecentReviews = async function(areaRestaurants) {
+     const container = document.getElementById('recent-reviews');
+     if (!container) return;
+
+
+     const areaMap = {};
+     (areaRestaurants || []).forEach(r => { areaMap[r.id] = r.data.name || ''; });
+     const areaIds = Object.keys(areaMap);
+
+
+     // ── Scenario 1: reviews for area restaurants ──────────────────
+     if (areaIds.length > 0) {
+       try {
+         const topIds = (areaRestaurants || [])
+           .filter(r => r.data.reviewCount > 0)
+           .sort((a, b) => (b.data.reviewCount || 0) - (a.data.reviewCount || 0))
+           .slice(0, 15)
+           .map(r => r.id);
+
+
+         if (topIds.length > 0) {
+           const q = query(
+             collection(db, 'reviews'),
+             where('restaurantId', 'in', topIds),
+             orderBy('createdAt', 'desc'),
+             limit(3)
+           );
+           const snap = await getDocs(q);
+           if (!snap.empty) {
+             const cards = snap.docs.map(d => {
+               const rv = d.data();
+               return buildReviewCard(rv, areaMap[rv.restaurantId] || '', rv.restaurantId);
+             });
+             if (cards.length < 3) {
+               const reviewedIds = new Set(snap.docs.map(d => d.data().restaurantId));
+               const topUp = (areaRestaurants || [])
+                 .filter(r => !reviewedIds.has(r.id) && r.data.createdAt)
+                 .sort((a, b) => {
+                   const ta = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
+                   const tb = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
+                   return tb - ta;
+                 })
+                 .slice(0, 3 - cards.length)
+                 .map(r =>
+                   `<div class="recent-review-card">` +
+                   `<div class="rr-name"><a href="restaurant.html?id=${r.id}">${r.data.name || ''}</a></div>` +
+                   `<div class="rr-text" style="color:#aaa; font-style:italic;">Recently added — be the first to review!</div>` +
+                   `</div>`
+                 );
+               container.innerHTML = [...cards, ...topUp].join('');
+             } else {
+               container.innerHTML = cards.join('');
+             }
+             return;
+           }
+         }
+       } catch(e) {
+         console.warn('Area reviews query failed:', e.message);
+       }
+     }
+
+
+     // ── Scenario 2: no area reviews — show 3 most recently added listings ──
+     if (areaIds.length > 0) {
+       const recent = (areaRestaurants || [])
+         .filter(r => r.data.createdAt)
+         .sort((a, b) => {
+           const ta = a.data.createdAt?.toMillis ? a.data.createdAt.toMillis() : 0;
+           const tb = b.data.createdAt?.toMillis ? b.data.createdAt.toMillis() : 0;
+           return tb - ta;
+         })
+         .slice(0, 3);
+
+
+       if (recent.length > 0) {
+         container.innerHTML = recent.map(r =>
+           `<div class="recent-review-card">` +
+           `<div class="rr-name"><a href="restaurant.html?id=${r.id}">${r.data.name || ''}</a></div>` +
+           `<div class="rr-text" style="color:#aaa; font-style:italic;">Recently added — be the first to review!</div>` +
+           `</div>`
+         ).join('');
+         return;
+       }
+     }
+
+
+     // ── Scenario 3: no listings in area ──
+     container.innerHTML =
+       `<div class="recent-review-card" style="color:#aaa; font-style:italic;">
+         No pizza spots here yet — <a href="add-restaurant.html" style="color:#c0392b; font-weight:bold;">add one!</a>
+       </div>`;
+   };
+
+
+   window.loadRecentReviews([]);
+   loadMostReviewed();
+   loadTopReviewers();
+
+
+   const RADIUS = 0.10;
+   const CACHE_KEY = 'sf-restaurants-cache';
+   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes (300k milliseconds)
+
+
+   function getCachedRestaurants(lat, lng) {
+     try {
+       const raw = sessionStorage.getItem(CACHE_KEY);
+       if (!raw) return null;
+       const { ts, clat, clng, restaurants } = JSON.parse(raw);
+       if (Date.now() - ts > CACHE_TTL) return null;
+       if (Math.abs(clat - lat) > RADIUS || Math.abs(clng - lng) > RADIUS) return null;
+       return restaurants;
+     } catch(e) { return null; }
+   }
+
+
+   function setCachedRestaurants(lat, lng, restaurants) {
+     try {
+       sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), clat: lat, clng: lng, restaurants }));
+     } catch(e) {}
+   }
+
+
+   function renderRestaurants(restaurants) {
+     document.getElementById('search-area-btn').style.display = 'none';
+     window.allMarkers.forEach(function(m) { map.removeLayer(m); });
+     window.allMarkers = [];
+     let count = 0;
+     restaurants.forEach(function(item) { addMarker(item.id, item.data); count++; });
+     const countLabel = count >= 100 ? '100+ slices found in your area!' : count + ' slice' + (count !== 1 ? 's' : '') + ' found in your area!';
+     setSlicesCount(countLabel);
+     var nameInput = document.getElementById('name-search-input');
+     if (nameInput && nameInput.value.trim()) window.filterMarkersByName(nameInput.value);
+     if (window.loadRecentReviews) window.loadRecentReviews(restaurants);
+   }
+
+
+   window.loadRestaurantsNear = async function(lat, lng) {
+     setSlicesCount('Searching…');
+     const cached = getCachedRestaurants(lat, lng);
+     if (cached) { renderRestaurants(cached); return; }
+     try {
+       const q = query(
+         collection(db, 'restaurants'),
+         where('lat', '>=', lat - RADIUS),
+         where('lat', '<=', lat + RADIUS),
+         limit(300)
+       );
+       const snapshot = await getDocs(q);
+       const restaurants = [];
+       snapshot.forEach(function(docSnap) {
+         const r = docSnap.data();
+         if (r.lat && r.lng && r.lng >= lng - RADIUS && r.lng <= lng + RADIUS) {
+           restaurants.push({ id: docSnap.id, data: r });
+         }
+       });
+       restaurants.sort((a, b) => (b.data.avgRating || 0) - (a.data.avgRating || 0));
+       const capped = restaurants.slice(0, 200);
+       setCachedRestaurants(lat, lng, capped);
+       renderRestaurants(capped);
+     } catch(e) {
+       setSlicesCount('Could not load restaurants');
+       console.error('Firestore error:', e);
+     }
+   };
+
+
+   // ── Contact form ──────────────────────────────────────────────────
+   window.submitContact = async function() {
+     const statusEl = document.getElementById('contact-status');
+     const message  = document.getElementById('contact-message').value.trim();
+     if (!message) { statusEl.textContent = '↓ El gato asks for your thoughts '; statusEl.style.color = '#d9534f'; return; }
+     statusEl.textContent = 'Sending…'; statusEl.style.color = '#888';
+     try {
+       await addDoc(collection(db, 'contact'), {
+         name:      document.getElementById('contact-name').value.trim()  || null,
+         email:     document.getElementById('contact-email').value.trim() || null,
+         message,
+         createdAt: serverTimestamp(),
+       });
+       statusEl.textContent = '✅ A squirrel or cat will advise';
+       statusEl.style.color = 'green';
+       document.getElementById('contact-name').value    = '';
+       document.getElementById('contact-email').value   = '';
+       document.getElementById('contact-message').value = '';
+     } catch(e) {
+       statusEl.textContent = '❌ Could not send. Try again.';
+       statusEl.style.color = 'red';
+     }
+   };
+
+
+   window.filterMarkersByName = function(query) {
+     var q = query.toLowerCase().trim();
+     var matchedMarkers = [];
+     window.allMarkers.forEach(function(m) {
+       if (!q || m._restaurantName.indexOf(q) !== -1) {
+         if (!map.hasLayer(m)) map.addLayer(m);
+         matchedMarkers.push(m);
+       } else {
+         if (map.hasLayer(m)) map.removeLayer(m);
+       }
+     });
+     var total = window.allMarkers.length;
+     if (q && matchedMarkers.length > 0) {
+       map.fitBounds(L.featureGroup(matchedMarkers).getBounds().pad(0.3));
+       setSlicesCount(matchedMarkers.length + ' match' + (matchedMarkers.length !== 1 ? 'es' : '') + ' for "' + query + '"');
+     } else if (q && matchedMarkers.length === 0) {
+       setSlicesCount('No matches for "' + query + '"');
+     } else {
+       setSlicesCount(total + ' slice' + (total !== 1 ? 's' : '') + ' found in your area!');
+     }
+   };
+
+
+   if (navigator.geolocation) {
+     navigator.geolocation.getCurrentPosition(
+       function(pos) { window.loadRestaurantsNear(pos.coords.latitude, pos.coords.longitude); },
+       function()    { window.loadRestaurantsNear(37.7749, -122.4194); },
+       { timeout: 8000, maximumAge: 60000 }
+     );
+   } else {
+     window.loadRestaurantsNear(37.7749, -122.4194);
+   }
+
+
+   const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js');
+   const auth = getAuth(app);
+   onAuthStateChanged(auth, (user) => {
+     const btn = document.getElementById('nav-auth-btn');
+     if (!btn) return;
+     btn.textContent = user ? (user.displayName || 'My Profile') : 'Login';
+     btn.href = 'profile.html';
+   });
+ </script>
+
 
 </body>
 </html>
+
+
+
+
