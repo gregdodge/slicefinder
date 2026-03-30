@@ -743,7 +743,7 @@
       const isMobile = window.innerWidth <= 800;
       const countLabel = isMobile
         ? count + ' slice' + (count !== 1 ? 's' : '')
-        : count + ' slice' + (count !== 1 ? 's' : '') + ' found in your area!';
+        : count + ' slice' + (count !== 1 ? 's' : '') + ' found in your area';
      setSlicesCount(countLabel);
      var nameInput = document.getElementById('name-search-input');
      if (nameInput && nameInput.value.trim()) window.filterMarkersByName(nameInput.value);
