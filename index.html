@@ -786,7 +786,7 @@
    window.submitContact = async function() {
      const statusEl = document.getElementById('contact-status');
      const message  = document.getElementById('contact-message').value.trim();
-     if (!message) { statusEl.textContent = '↓ El gato asks for your thoughts ↓'; statusEl.style.color = '#880808'; return; }
+     if (!message) { statusEl.textContent = 'El gato asks for your thoughts'; statusEl.style.color = '#880808'; return; }
      statusEl.textContent = 'Sending…'; statusEl.style.color = '#880808';
      try {
        await addDoc(collection(db, 'contact'), {
