@@ -786,8 +786,8 @@
    window.submitContact = async function() {
      const statusEl = document.getElementById('contact-status');
      const message  = document.getElementById('contact-message').value.trim();
-     if (!message) { statusEl.textContent = 'El gato asks for your thoughts'; statusEl.style.color = '#880808'; statusEl.style.fontWeight = 'bold'; return; }
-     statusEl.textContent = 'Sending…'; statusEl.style.color = '#880808';
+     if (!message) { statusEl.textContent = 'El gato asks for your thoughts'; statusEl.style.color = '#c0392b'; statusEl.style.fontWeight = 'bold'; return; }
+     statusEl.textContent = 'Sending…'; statusEl.style.color = '#c0392b';
      try {
        await addDoc(collection(db, 'contact'), {
          name:      document.getElementById('contact-name').value.trim()  || null,
@@ -802,7 +802,7 @@
        document.getElementById('contact-message').value = '';
      } catch(e) {
        statusEl.textContent = '❌ Could not send. Try again.';
-       statusEl.style.color = '#880808';
+       statusEl.style.color = '#c0392b';
       console.error('Contact form error:', e);
      }
    };
